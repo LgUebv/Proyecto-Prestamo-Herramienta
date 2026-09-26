@@ -1,0 +1,47 @@
+name: prestamo-herramientas
+
+services:
+  # Aplicación web: Laravel sobre PHP 8.4 + Apache
+  app:
+    build:
+      context: .
+      target: app
+    image: prestamo-herramientas:latest
+    restart: unless-stopped
+    env_file: .env.docker
+    environment:
+      # La app siempre habla con el contenedor de base de datos
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+    ports:
+      - "${APP_PORT:-8000}:8080"
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Base de datos: MySQL 8.4 (LTS)
+  db:
+    image: docker.io/library/mysql:8.4
+    restart: unless-stopped
+    # Toma MYSQL_* de .env.docker
+    env_file: .env.docker
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/app.cnf:ro
+    # Solo accesible desde tu equipo (para DBeaver, Workbench, etc.).
+    # Usa 3307 para no chocar con un MySQL local en 3306.
+    ports:
+      - "127.0.0.1:${DB_FORWARD_PORT:-3307}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  app-storage:
+  db-data:

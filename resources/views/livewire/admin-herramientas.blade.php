@@ -56,6 +56,10 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-4">
+            {{ $herramientas->links() }}
+        </div>
     </div>
 
     @if ($modalAbierto)

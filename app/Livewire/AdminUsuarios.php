@@ -4,11 +4,14 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\WithPagination;
 use App\Models\Prestatario;
 
 #[Layout('layouts.app')]
 class AdminUsuarios extends Component
 {
+    use WithPagination;
+
     public $search = '';
     public $modalAbierto = false;
     
@@ -16,6 +19,8 @@ class AdminUsuarios extends Component
     public $id_usuario;
     public $numero_control, $nombre_completo, $tipo_usuario, $carrera_departamento;
     public $semestre, $grupo, $telefono, $estado;
+
+    public function updatingSearch() { $this->resetPage(); }
 
     public function abrirModal() 
     { 
@@ -105,7 +110,7 @@ class AdminUsuarios extends Component
         $usuarios = Prestatario::where('nombre_completo', 'like', '%' . $this->search . '%')
             ->orWhere('numero_control', 'like', '%' . $this->search . '%')
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(10);
             
         return view('livewire.admin-usuarios', compact('usuarios'));
     }

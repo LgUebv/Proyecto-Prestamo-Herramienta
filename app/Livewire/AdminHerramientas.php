@@ -4,12 +4,15 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\WithPagination;
 use App\Models\Herramienta;
 use Illuminate\Support\Str;
 
 #[Layout('layouts.app')]
 class AdminHerramientas extends Component
 {
+    use WithPagination;
+
     // Variables del buscador y CRUD
     public $search = '';
     public $modalAbierto = false;
@@ -19,6 +22,8 @@ class AdminHerramientas extends Component
     // Variables exclusivas para el QR
     public $modalQrAbierto = false;
     public $herramientaSeleccionada = null;
+
+    public function updatingSearch() { $this->resetPage(); }
 
     // --- FUNCIONES DEL CRUD DE HERRAMIENTAS ---
     public function abrirModal() { $this->resetInput(); $this->modalAbierto = true; }
@@ -153,7 +158,8 @@ class AdminHerramientas extends Component
     {
         $herramientas = Herramienta::where('nombre', 'like', '%'.$this->search.'%')
                         ->orWhere('codigo_barras', 'like', '%'.$this->search.'%')
-                        ->get();
+                        ->orderBy('id')
+                        ->paginate(10);
                         
         return view('livewire.admin-herramientas', compact('herramientas'));
     }

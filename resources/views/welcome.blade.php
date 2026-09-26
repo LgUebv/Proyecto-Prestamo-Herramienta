@@ -3,107 +3,198 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sistema de Almacén y Préstamos - TSJ</title>
+    <title>Sistema de Préstamo de Herramientas · TSJ</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="antialiased font-sans bg-gray-50 text-gray-900 flex flex-col min-h-screen">
+<body class="antialiased font-sans bg-white text-gray-900 flex flex-col min-h-screen">
 
-    <header class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2 rounded-lg">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                </div>
-                <span class="font-bold text-xl text-gray-800 tracking-tight">Sistema de Prestamo y Gestión de Herramientas</span>
-            </div>
+    {{-- Franja institucional --}}
+    <div class="bg-[#3710a0] text-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between text-xs">
+            <span class="hidden sm:inline">Tecnológico Superior de Jalisco · Unidad Académica Lagos de Moreno</span>
+            <span class="sm:hidden">TSJ · UA Lagos de Moreno</span>
+            <span class="hidden sm:inline text-white/80">Almacén de herramientas</span>
+        </div>
+    </div>
+
+    {{-- Encabezado --}}
+    <header class="border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+            <a href="/" class="flex items-center gap-4 min-w-0">
+                <img src="{{ asset('img/tsjLogo.png') }}" alt="Tecnológico Superior de Jalisco" class="h-12 sm:h-14 w-auto shrink-0">
+                <span class="hidden md:block h-10 w-px bg-gray-300"></span>
+                <span class="hidden md:block leading-tight">
+                    <span class="block font-semibold text-gray-900">Sistema de Préstamo de Herramientas</span>
+                    <span class="block text-sm text-gray-500">Control de inventario y préstamos del almacén</span>
+                </span>
+            </a>
 
             @if (Route::has('login'))
-                <div class="flex items-center space-x-3">
+                <nav class="flex items-center gap-4 shrink-0">
                     @auth
-                        <a href="{{ url('/dashboard') }}" class="text-sm font-semibold text-gray-600 hover:text-indigo-600 transition">Ir al Panel</a>
+                        <a href="{{ route('dashboard') }}" class="rounded-md bg-[#3710a0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2a0c7c] focus:outline-none focus:ring-2 focus:ring-[#3710a0] focus:ring-offset-2">
+                            Ir al panel
+                        </a>
                     @else
-                        <a href="{{ route('login') }}" class="text-sm font-bold bg-indigo-600 text-white px-5 py-2.5 rounded-md hover:bg-indigo-700 transition shadow-sm">Iniciar Sesión</a>
-                        
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="text-sm font-bold bg-white text-indigo-600 border border-indigo-600 px-5 py-2.5 rounded-md hover:bg-indigo-50 transition shadow-sm">Registrarse</a>
-                        @endif
+                        <a href="{{ route('login') }}" class="rounded-md bg-[#3710a0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2a0c7c] focus:outline-none focus:ring-2 focus:ring-[#3710a0] focus:ring-offset-2">
+                            Iniciar sesión
+                        </a>
                     @endauth
-                </div>
+                </nav>
             @endif
         </div>
     </header>
 
-    <main class="flex-grow flex items-center justify-center">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-            
-            <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6">
-                Control de Inventario <br class="hidden sm:block"> 
-                <span class="text-indigo-600">inteligente y seguro</span>
-            </h1>
-            
-            <p class="mt-4 max-w-2xl text-lg sm:text-xl text-gray-500 mx-auto mb-10">
-                Sistema centralizado para la gestión de herramientas, control de préstamos mediante código de barras y trazabilidad completa de tu almacén.
-            </p>
+    <main class="flex-grow">
 
-            <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                @auth
-                    <a href="{{ url('/dashboard') }}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-indigo-700 shadow-lg transition-transform transform hover:-translate-y-0.5">
-                        Ingresar al Sistema
-                    </a>
-                @else
-                    <a href="{{ route('login') }}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-indigo-700 shadow-lg transition-transform transform hover:-translate-y-0.5 flex items-center justify-center w-full sm:w-auto">
-                        Iniciar Sesión
-                        <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                    </a>
+        {{-- Presentación --}}
+        <section class="bg-gray-50 border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 grid gap-10 lg:grid-cols-12 lg:items-start">
+                <div class="lg:col-span-7">
+                    <p class="flex items-center gap-2 text-sm font-medium text-[#3710a0]">
+                        <span class="flex gap-0.5" aria-hidden="true">
+                            <span class="size-2 bg-[#0090ff]"></span>
+                            <span class="size-2 bg-[#ff4c64]"></span>
+                            <span class="size-2 bg-[#00ca8d]"></span>
+                        </span>
+                        Almacén · Uso interno
+                    </p>
 
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg font-bold text-lg hover:bg-indigo-50 shadow-lg transition-transform transform hover:-translate-y-0.5 flex items-center justify-center w-full sm:w-auto">
-                            Crear Cuenta
-                        </a>
+                    <h1 class="mt-4 text-3xl sm:text-4xl font-semibold tracking-tight text-gray-900">
+                        Préstamo de herramientas y equipo de medición
+                    </h1>
+
+                    <p class="mt-4 text-lg text-gray-600 max-w-2xl">
+                        Plataforma del almacén para registrar los préstamos a alumnos y docentes, controlar las devoluciones
+                        y mantener actualizado el inventario de la institución.
+                    </p>
+
+                    <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+                        @auth
+                            <a href="{{ route('dashboard') }}" class="rounded-md bg-[#3710a0] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2a0c7c] focus:outline-none focus:ring-2 focus:ring-[#3710a0] focus:ring-offset-2">
+                                Ir al panel
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="rounded-md bg-[#3710a0] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2a0c7c] focus:outline-none focus:ring-2 focus:ring-[#3710a0] focus:ring-offset-2">
+                                Iniciar sesión
+                            </a>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}" class="text-sm font-semibold text-[#3710a0] hover:underline">
+                                    Crear cuenta de almacenista
+                                </a>
+                            @endif
+                        @endauth
+                    </div>
+
+                    <p class="mt-6 text-sm text-gray-500 max-w-xl">
+                        El acceso es exclusivo para el personal del almacén. Si eres alumno o docente, acude a la ventanilla
+                        del almacén para solicitar tu préstamo.
+                    </p>
+                </div>
+
+                {{-- Disponibilidad actual --}}
+                <aside class="lg:col-span-5 bg-white border border-gray-200 rounded-md">
+                    <div class="px-5 py-4 border-b border-gray-200">
+                        <h2 class="font-semibold text-gray-900">Disponibilidad actual</h2>
+                        <p class="text-sm text-gray-500">Herramientas disponibles en el almacén por categoría</p>
+                    </div>
+
+                    @if ($categorias->isNotEmpty())
+                        <ul class="divide-y divide-gray-100">
+                            @foreach ($categorias as $categoria)
+                                <li class="px-5 py-4">
+                                    <div class="flex items-baseline justify-between gap-4">
+                                        <span class="text-sm text-gray-700">{{ $categoria->nombre }}</span>
+                                        <span class="text-sm text-gray-500 tabular-nums whitespace-nowrap">
+                                            <span class="font-semibold text-gray-900">{{ (int) $categoria->disponibles }}</span> de {{ $categoria->total }}
+                                        </span>
+                                    </div>
+                                    <div class="mt-2 h-1.5 rounded-full bg-[#e4dcf7]">
+                                        <div class="h-full rounded-full bg-[#3710a0]"
+                                             style="width: {{ $categoria->total > 0 ? $categoria->disponibles * 100 / $categoria->total : 0 }}%"></div>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="px-5 py-4 text-sm text-gray-500">Aún no hay categorías registradas.</p>
                     @endif
-                @endauth
+
+                    <p class="px-5 py-3 border-t border-gray-200 text-xs text-gray-500">
+                        Actualizado el {{ now()->format('d/m/Y') }} a las {{ now()->format('H:i') }} h
+                    </p>
+                </aside>
             </div>
+        </section>
 
-            <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Escaneo Rápido</h3>
-                    <p class="text-gray-500 text-sm">Registro de salidas y entradas en segundos utilizando tecnología de códigos QR o barras.</p>
+        {{-- Procedimiento --}}
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+            <h2 class="text-xl font-semibold text-gray-900">¿Cómo se solicita un préstamo?</h2>
+            <p class="mt-1 text-gray-600">El trámite se realiza en la ventanilla del almacén.</p>
+
+            <ol class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                <li class="border-t-2 border-[#3710a0] pt-4">
+                    <span class="text-sm font-semibold text-[#3710a0] tabular-nums">Paso 1</span>
+                    <h3 class="mt-1 font-semibold text-gray-900">Identificación</h3>
+                    <p class="mt-2 text-sm text-gray-600">Proporciona tu número de control al almacenista. El personal docente o administrativo se registra con su departamento.</p>
+                </li>
+                <li class="border-t-2 border-[#3710a0] pt-4">
+                    <span class="text-sm font-semibold text-[#3710a0] tabular-nums">Paso 2</span>
+                    <h3 class="mt-1 font-semibold text-gray-900">Registro de salida</h3>
+                    <p class="mt-2 text-sm text-gray-600">Se escanea el código de cada herramienta y se anota su estado al momento de la entrega.</p>
+                </li>
+                <li class="border-t-2 border-[#3710a0] pt-4">
+                    <span class="text-sm font-semibold text-[#3710a0] tabular-nums">Paso 3</span>
+                    <h3 class="mt-1 font-semibold text-gray-900">Aceptación de términos</h3>
+                    <p class="mt-2 text-sm text-gray-600">Confirmas los términos del préstamo y la fecha límite en que debes devolver el material.</p>
+                </li>
+                <li class="border-t-2 border-[#3710a0] pt-4">
+                    <span class="text-sm font-semibold text-[#3710a0] tabular-nums">Paso 4</span>
+                    <h3 class="mt-1 font-semibold text-gray-900">Devolución</h3>
+                    <p class="mt-2 text-sm text-gray-600">Entrega las herramientas antes de la fecha límite. El almacenista que las recibe queda registrado en el sistema.</p>
+                </li>
+            </ol>
+        </section>
+
+        {{-- Funciones del sistema --}}
+        <section class="border-t border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 grid gap-8 lg:grid-cols-3">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Funciones para el personal del almacén</h2>
+                    <p class="mt-2 text-gray-600">Herramientas de trabajo disponibles al iniciar sesión.</p>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <dl class="lg:col-span-2 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+                    <div>
+                        <dt class="font-semibold text-gray-900">Inventario con código de barras</dt>
+                        <dd class="mt-1 text-sm text-gray-600">Alta de herramientas por lote con códigos por categoría y etiquetas imprimibles.</dd>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Auditoría Total</h3>
-                    <p class="text-gray-500 text-sm">Historial inviolable con firmas digitales de los almacenistas en cada entrega y recepción.</p>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <div>
+                        <dt class="font-semibold text-gray-900">Entregas y recepciones</dt>
+                        <dd class="mt-1 text-sm text-gray-600">Cada préstamo registra quién entrega y quién recibe el material en el almacén.</dd>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Reportes Precisos</h3>
-                    <p class="text-gray-500 text-sm">Generación automática de reportes en PDF y Excel para el cierre de mes o revisiones físicas.</p>
-                </div>
+                    <div>
+                        <dt class="font-semibold text-gray-900">Control de fechas límite</dt>
+                        <dd class="mt-1 text-sm text-gray-600">Seguimiento de préstamos activos y aviso de los que ya están vencidos.</dd>
+                    </div>
+                    <div>
+                        <dt class="font-semibold text-gray-900">Reportes en PDF y Excel</dt>
+                        <dd class="mt-1 text-sm text-gray-600">Reportes de préstamos por periodo y del inventario para revisiones físicas.</dd>
+                    </div>
+                </dl>
             </div>
-
-        </div>
+        </section>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-            <p>Sistema de Almacén diseñado para "Tecnológico Superior de Jalisco UA Lagos de Moreno"</p>
-            <p class="mt-2 md:mt-0">Diseñado para la eficiencia operativa.</p>
+    {{-- Pie de página --}}
+    <footer class="bg-gray-50 border-t border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-500">
+            <p>Tecnológico Superior de Jalisco · Unidad Académica Lagos de Moreno</p>
+            <p>Sistema de Préstamo de Herramientas {{ date('Y') }}</p>
         </div>
     </footer>
 

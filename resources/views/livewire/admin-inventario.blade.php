@@ -68,5 +68,9 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-4">
+            {{ $inventario->links() }}
+        </div>
     </div>
 </div>

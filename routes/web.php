@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 use App\Livewire\MisPrestamos;
 use App\Livewire\AdminPrestamos;
 use App\Livewire\AdminHerramientas;
@@ -9,7 +11,15 @@ use App\Livewire\NuevoPrestamo;
 use App\Livewire\AdminInventario;
 
 Route::get('/', function () {
-    return view('welcome');
+    // Disponibilidad por categoría para la página de inicio
+    $categorias = DB::table('categorias')
+        ->leftJoin('herramientas', 'herramientas.categoria_id', '=', 'categorias.id')
+        ->selectRaw("categorias.nombre, COUNT(herramientas.id) as total, SUM(CASE WHEN herramientas.disponibilidad = 'disponible' THEN 1 ELSE 0 END) as disponibles")
+        ->groupBy('categorias.id', 'categorias.nombre')
+        ->orderBy('categorias.nombre')
+        ->get();
+
+    return view('welcome', compact('categorias'));
 });
 
 Route::middleware([
@@ -17,9 +27,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
 // Ruta para usuarios normales
 Route::get('/mis-prestamos', MisPrestamos::class)->name('mis.prestamos');

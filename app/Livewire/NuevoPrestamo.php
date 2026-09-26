@@ -18,7 +18,6 @@ class NuevoPrestamo extends Component
     public $numeroControl = '';
     public $codigoBarras = '';
     public $materia = '';
-    public $fechaLimite = '';
     public $aceptoTerminos = false;
     
     // Variables para usuarios nuevos
@@ -115,14 +114,22 @@ class NuevoPrestamo extends Component
         $this->carrito = array_values($this->carrito); 
     }
 
+    // El préstamo vence hoy a las 8:00 p.m.; si se registra a esa hora o después, vence mañana a las 8:00 p.m.
+    public function calcularFechaLimite()
+    {
+        $limite = now()->setTime(20, 0);
+
+        return now()->gte($limite) ? $limite->addDay() : $limite;
+    }
+
     public function confirmarPrestamo()
     {
         $this->mensajeError = ''; 
         $this->mensajeExito = '';
 
         // 1. Validación de campos generales
-        if (empty($this->carrito) || empty($this->materia) || empty($this->fechaLimite) || !$this->aceptoTerminos) {
-            $this->mensajeError = 'Faltan datos: Asegúrate de llenar la materia, fecha límite, agregar herramientas y aceptar los términos.';
+        if (empty($this->carrito) || empty($this->materia) || !$this->aceptoTerminos) {
+            $this->mensajeError = 'Faltan datos: Asegúrate de llenar la materia, agregar herramientas y aceptar los términos.';
             return;
         }
 
@@ -172,7 +179,7 @@ class NuevoPrestamo extends Component
                     'user_id' => Auth::id(),
                     'materia' => $this->materia,
                     'fecha_prestamo' => now(),
-                    'fecha_limite' => $this->fechaLimite,
+                    'fecha_limite' => $this->calcularFechaLimite(),
                     'estado_prestamo' => 'activo',
                     'acepto_terminos' => $this->aceptoTerminos,
                 ]);
@@ -195,7 +202,7 @@ class NuevoPrestamo extends Component
             // 6. Limpieza final
             $this->reset([
                 'numeroControl', 'codigoBarras', 'prestatario', 'carrito', 
-                'materia', 'fechaLimite', 'aceptoTerminos', 'nombreCompleto', 
+                'materia', 'aceptoTerminos', 'nombreCompleto', 
                 'esNuevoRegistro', 'es_trabajador', 'nombre_trabajador'
             ]);
             

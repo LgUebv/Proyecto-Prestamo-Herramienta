@@ -70,10 +70,11 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="block text-sm text-gray-700">Fecha y Hora Límite</label>
-                        <input type="datetime-local" wire:model="fechaLimite" 
-                               min="{{ now()->format('Y-m-d\TH:i') }}"
-                               class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                        <span class="block text-sm text-gray-700">Fecha y Hora Límite</span>
+                        <p class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                            @php $fechaLimite = $this->calcularFechaLimite(); @endphp
+                            {{ $fechaLimite->isToday() ? 'Hoy' : 'Mañana' }}, {{ $fechaLimite->format('d/m/Y') }} a las 8:00 p.m.
+                        </p>
                     </div>
 
                     <div class="mt-4 flex items-start">
@@ -125,7 +126,7 @@
                 <div class="mt-6 flex justify-end">
                     <button wire:click="confirmarPrestamo" 
                             class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-md shadow hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            {{ empty($carrito) || (!$es_trabajador && !$prestatario && !$esNuevoRegistro) || ($es_trabajador && empty($nombre_trabajador)) || empty($materia) || empty($fechaLimite) || !$aceptoTerminos ? 'disabled' : '' }}>
+                            {{ empty($carrito) || (!$es_trabajador && !$prestatario && !$esNuevoRegistro) || ($es_trabajador && empty($nombre_trabajador)) || empty($materia) || !$aceptoTerminos ? 'disabled' : '' }}>
                         Confirmar Préstamo
                     </button>
                 </div>

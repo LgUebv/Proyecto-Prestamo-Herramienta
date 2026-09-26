@@ -1,0 +1,38 @@
+# Control de versiones y editores
+.git
+.github
+.idea
+.vscode
+.fleet
+.zed
+*.log
+.DS_Store
+Thumbs.db
+
+# Dependencias (se instalan dentro de la imagen)
+/vendor
+/node_modules
+
+# Archivos generados
+/public/build
+/public/hot
+/public/storage
+/bootstrap/cache/*.php
+/storage/*.key
+/storage/logs/*
+/storage/pail
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/.phpunit.cache
+.phpunit.result.cache
+
+# Secretos: nunca se copian a la imagen, se inyectan en tiempo de ejecución
+.env
+.env.*
+!.env.example
+
+# Archivos de Docker que no forman parte de la app
+Dockerfile
+compose.yaml
+.dockerignore

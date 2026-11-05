@@ -66,4 +66,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // Registro de almacenista vinculado a esta cuenta (si existe)
+    public function almacenista()
+    {
+        return $this->hasOne(Almacenista::class, 'user_id');
+    }
+
+    // Una cuenta vinculada a un almacenista inactivo no puede usar el sistema
+    public function esAlmacenistaInactivo(): bool
+    {
+        return $this->almacenista()->where('estado', '!=', 'activo')->exists();
+    }
 }

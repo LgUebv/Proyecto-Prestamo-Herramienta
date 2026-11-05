@@ -157,10 +157,17 @@
 
 <select wire:model.live="almacenista_recibe_id" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
     <option value="">Selecciona al almacenista...</option>
-    @foreach($usuarios as $user)
-        <option value="{{ $user->id }}">{{ $user->name }}</option>
+    @foreach($almacenistas->groupBy('tipo') as $tipo => $grupo)
+        <optgroup label="{{ $tipo === 'fijo' ? 'Fijos' : 'Temporales' }}">
+            @foreach($grupo as $almacenista)
+                <option value="{{ $almacenista->id }}">{{ $almacenista->nombre }}</option>
+            @endforeach
+        </optgroup>
     @endforeach
 </select>
+@if($almacenistas->isEmpty())
+    <span class="text-red-600 text-xs mt-1 block">No hay almacenistas activos. Regístralos en la sección Almacenistas.</span>
+@endif
 
 @error('almacenista_recibe_id') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>

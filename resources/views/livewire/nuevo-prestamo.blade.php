@@ -52,9 +52,19 @@
                                         <input type="text" wire:model="nombreCompleto" 
                                             class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm" placeholder="Nombre completo" autofocus>
                                     </div>
+
+                                    <x-camara-foto model="foto" :auto-iniciar="true" class="mt-3" wire:key="camara-{{ $numeroControl }}" />
+                                    @error('foto') <span class="block mt-1 text-xs text-red-600">{{ $message }}</span> @enderror
                                 @else
-                                    <p class="text-sm font-bold text-indigo-800">{{ $nombreCompleto }}</p>
-                                    <p class="text-xs text-indigo-600">{{ $prestatario->tipo_usuario ?? '' }}</p>
+                                    <div class="flex items-center gap-3">
+                                        @if($prestatario?->foto_url)
+                                            <img src="{{ $prestatario->foto_url }}" alt="Foto de {{ $nombreCompleto }}" class="size-14 rounded-md object-cover border border-indigo-200">
+                                        @endif
+                                        <div>
+                                            <p class="text-sm font-bold text-indigo-800">{{ $nombreCompleto }}</p>
+                                            <p class="text-xs text-indigo-600">{{ $prestatario->tipo_usuario ?? '' }}</p>
+                                        </div>
+                                    </div>
                                 @endif
                             </div>
                         @endif
@@ -67,6 +77,23 @@
                     <div class="mb-3">
                         <label class="block text-sm text-gray-700">Materia / Práctica</label>
                         <input type="text" wire:model="materia" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="almacenista-autoriza" class="block text-sm text-gray-700">Autoriza (almacenista)</label>
+                        <select id="almacenista-autoriza" wire:model.live="almacenistaAutorizaId" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            <option value="">Selecciona un almacenista...</option>
+                            @foreach ($almacenistas->groupBy('tipo') as $tipo => $grupo)
+                                <optgroup label="{{ $tipo === 'fijo' ? 'Fijos' : 'Temporales' }}">
+                                    @foreach ($grupo as $almacenista)
+                                        <option value="{{ $almacenista->id }}">{{ $almacenista->nombre }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
+                        @if ($almacenistas->isEmpty())
+                            <p class="mt-1 text-xs text-red-600">No hay almacenistas activos. Regístralos en la sección Almacenistas.</p>
+                        @endif
                     </div>
 
                     <div class="mb-3">
@@ -126,7 +153,7 @@
                 <div class="mt-6 flex justify-end">
                     <button wire:click="confirmarPrestamo" 
                             class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-md shadow hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            {{ empty($carrito) || (!$es_trabajador && !$prestatario && !$esNuevoRegistro) || ($es_trabajador && empty($nombre_trabajador)) || empty($materia) || !$aceptoTerminos ? 'disabled' : '' }}>
+                            {{ empty($carrito) || (!$es_trabajador && !$prestatario && !$esNuevoRegistro) || (!$es_trabajador && $esNuevoRegistro && !$foto) || ($es_trabajador && empty($nombre_trabajador)) || empty($materia) || empty($almacenistaAutorizaId) || !$aceptoTerminos ? 'disabled' : '' }}>
                         Confirmar Préstamo
                     </button>
                 </div>

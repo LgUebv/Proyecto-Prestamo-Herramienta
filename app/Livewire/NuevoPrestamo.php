@@ -4,25 +4,32 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\WithFileUploads;
 use App\Models\Prestatario;
 use App\Models\Herramienta;
 use App\Models\Prestamo;
 use App\Models\PrestamoDetalles;
+use App\Models\Almacenista;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 #[Layout('layouts.app')]
 class NuevoPrestamo extends Component
 {
+    use WithFileUploads;
+
     // Variables de inputs
     public $numeroControl = '';
     public $codigoBarras = '';
     public $materia = '';
     public $aceptoTerminos = false;
+    public $almacenistaAutorizaId = '';
     
     // Variables para usuarios nuevos
     public $nombreCompleto = '';
     public $esNuevoRegistro = false;
+    public $foto; // Foto tomada con la cámara al registrar un prestatario nuevo
     
     // Variables de estado general
     public $prestatario = null;
@@ -35,6 +42,14 @@ class NuevoPrestamo extends Component
 
     // --- VARIABLES DEL CARRITO/PRESTAMO ---
     public $codigoEscaneado = ''; 
+
+    public function mount()
+    {
+        // Por defecto autoriza el almacenista vinculado a la sesión actual (si existe y está activo)
+        $this->almacenistaAutorizaId = Almacenista::where('user_id', Auth::id())
+            ->where('estado', 'activo')
+            ->value('id') ?? '';
+    }
 
     public function updatedEsTrabajador()
     {
@@ -75,7 +90,8 @@ class NuevoPrestamo extends Component
 
     public function limpiarPrestatario()
     {
-        $this->reset(['prestatario', 'numeroControl', 'nombreCompleto', 'esNuevoRegistro', 'mensajeError', 'es_trabajador', 'nombre_trabajador']);
+        $this->reset(['prestatario', 'numeroControl', 'nombreCompleto', 'esNuevoRegistro', 'mensajeError', 'es_trabajador', 'nombre_trabajador', 'foto']);
+        $this->resetValidation();
     }
 
     public function agregarAlCarrito()
@@ -133,6 +149,17 @@ class NuevoPrestamo extends Component
             return;
         }
 
+        // El almacenista que autoriza debe existir, estar activo y tener cuenta vinculada
+        $autoriza = Almacenista::where('id', $this->almacenistaAutorizaId)
+            ->where('estado', 'activo')
+            ->whereNotNull('user_id')
+            ->first();
+
+        if (!$autoriza) {
+            $this->mensajeError = 'Selecciona al almacenista que autoriza el préstamo.';
+            return;
+        }
+
 
         // 2. Validación específica según el tipo de persona
         if ($this->es_trabajador) {
@@ -146,14 +173,25 @@ class NuevoPrestamo extends Component
                 return;
             }
 
+            if ($this->esNuevoRegistro) {
+                if (!$this->foto) {
+                    $this->mensajeError = 'Toma la fotografía del nuevo usuario antes de continuar.';
+                    return;
+                }
+
+                $this->validate(['foto' => 'image|max:5120'], [], ['foto' => 'fotografía']);
+            }
+
             if (!$this->esNuevoRegistro && !$this->prestatario) {
                 $this->mensajeError = 'Debes buscar un usuario válido antes de continuar.';
                 return;
             }
         }
 
+        $rutaFoto = null;
+
         try {
-            DB::transaction(function () {
+            DB::transaction(function () use ($autoriza, &$rutaFoto) {
                 // 3. Crear el Prestatario si es necesario
                 if ($this->es_trabajador) {
                     $this->prestatario = Prestatario::firstOrCreate(
@@ -165,11 +203,14 @@ class NuevoPrestamo extends Component
                         ]
                     );
                 } elseif ($this->esNuevoRegistro) {
+                    $rutaFoto = $this->foto->store('prestatarios', 'local');
+
                     $this->prestatario = Prestatario::create([
                         'numero_control' => $this->numeroControl,
                         'nombre_completo' => $this->nombreCompleto,
                         'tipo_usuario' => str_starts_with($this->numeroControl, 'T-') ? 'Trabajador' : 'Alumno',
-                        'estado' => 'activo' 
+                        'estado' => 'activo',
+                        'foto' => $rutaFoto,
                     ]);
                 }
 
@@ -192,8 +233,8 @@ class NuevoPrestamo extends Component
                         'cantidad' => 1, 
                         'condicion_entrega' => $item['estado_fisico'],
                         
-                        // Firma de auditoría: Quién lo prestó
-                        'entregado_por_id' => Auth::id(),
+                        // Firma de auditoría: almacenista que autorizó la salida
+                        'entregado_por_id' => $autoriza->user_id,
                     ]);
                     Herramienta::where('id', $item['id'])->update(['disponibilidad' => 'prestada']);
                 }
@@ -203,18 +244,28 @@ class NuevoPrestamo extends Component
             $this->reset([
                 'numeroControl', 'codigoBarras', 'prestatario', 'carrito', 
                 'materia', 'aceptoTerminos', 'nombreCompleto', 
-                'esNuevoRegistro', 'es_trabajador', 'nombre_trabajador'
+                'esNuevoRegistro', 'es_trabajador', 'nombre_trabajador', 'foto'
             ]);
             
             $this->mensajeExito = '¡Préstamo guardado y firmado correctamente!';
 
         } catch (\Exception $e) {
+            // Si el préstamo no se guardó, no dejar la foto huérfana en el disco
+            if ($rutaFoto) {
+                Storage::disk('local')->delete($rutaFoto);
+            }
             $this->mensajeError = 'Error al guardar en base de datos: ' . $e->getMessage();
         }
     }
 
     public function render()
     {
-        return view('livewire.nuevo-prestamo');
+        $almacenistas = Almacenista::where('estado', 'activo')
+            ->whereNotNull('user_id')
+            ->orderBy('tipo')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'tipo']);
+
+        return view('livewire.nuevo-prestamo', compact('almacenistas'));
     }
 }

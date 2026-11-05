@@ -4,6 +4,13 @@
     </x-slot>
 
     <div class="bg-white shadow-xl sm:rounded-lg p-6">
+        @if ($mensajeExito)
+            <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">{{ $mensajeExito }}</div>
+        @endif
+        @if ($mensajeError)
+            <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">{{ $mensajeError }}</div>
+        @endif
+
         <div class="flex justify-between mb-6">
             <input type="text" wire:model.live="search" placeholder="Buscar por nombre o control..." 
                    class="border-gray-300 rounded-md w-1/3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -28,7 +35,18 @@
                     @forelse($usuarios as $user)
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $user->numero_control }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $user->nombre_completo }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            <div class="flex items-center gap-3">
+                                @if($user->foto_url)
+                                    <img src="{{ $user->foto_url }}" alt="Foto de {{ $user->nombre_completo }}" loading="lazy" class="size-9 rounded-full object-cover">
+                                @else
+                                    <span class="size-9 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-500" aria-hidden="true">
+                                        {{ mb_strtoupper(mb_substr($user->nombre_completo, 0, 1)) }}
+                                    </span>
+                                @endif
+                                {{ $user->nombre_completo }}
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->tipo_usuario }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->carrera_departamento ?? 'N/A' }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -58,7 +76,7 @@
 
     @if($modalAbierto)
     <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden max-h-[95vh] overflow-y-auto">
             <div class="px-6 py-4 bg-gray-50 border-b">
                 <h3 class="text-lg font-bold text-gray-800">{{ $id_usuario ? 'Editar Registro de Usuario' : 'Registrar Nuevo Usuario' }}</h3>
             </div>
@@ -105,6 +123,11 @@
                         <option value="inactivo">Inactivo</option>
                         <option value="suspendido">Suspendido</option>
                     </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <x-camara-foto model="foto" :auto-iniciar="! $id_usuario" :foto-actual="$fotoActual" wire:key="camara-usuario-{{ $id_usuario ?? 'nuevo' }}" />
+                    @error('foto') <span class="block mt-1 text-sm text-red-600">{{ $message }}</span> @enderror
                 </div>
             </div>
 

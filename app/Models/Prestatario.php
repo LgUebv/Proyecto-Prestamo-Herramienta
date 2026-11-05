@@ -16,6 +16,13 @@ class Prestatario extends Model
         'semestre',
         'grupo',
         'telefono',
-        'estado'
+        'estado',
+        'foto'
     ];
+
+    // URL protegida (requiere sesión) para mostrar la foto del prestatario
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? route('prestatarios.foto', $this) . '?v=' . $this->updated_at?->timestamp : null;
+    }
 }

@@ -22,6 +22,9 @@
                     <x-nav-link href="{{ route('admin.usuarios') }}" :active="request()->routeIs('admin.usuarios')">
                         {{ __('Usuarios') }}
                     </x-nav-link>
+                    <x-nav-link href="{{ route('admin.almacenistas') }}" :active="request()->routeIs('admin.almacenistas')">
+                        {{ __('Almacenistas') }}
+                    </x-nav-link>
                     <x-nav-link href="{{ route('admin.inventario') }}" :active="request()->routeIs('admin.inventario')">
                         {{ __('Inventario') }}
                     </x-nav-link>
@@ -170,6 +173,21 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('admin.prestamos') }}" :active="request()->routeIs('admin.prestamos')">
+                {{ __('Préstamos') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('admin.usuarios') }}" :active="request()->routeIs('admin.usuarios')">
+                {{ __('Usuarios') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('admin.almacenistas') }}" :active="request()->routeIs('admin.almacenistas')">
+                {{ __('Almacenistas') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('admin.inventario') }}" :active="request()->routeIs('admin.inventario')">
+                {{ __('Inventario') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('admin.herramientas') }}" :active="request()->routeIs('admin.herramientas')">
+                {{ __('Herramientas') }}
             </x-responsive-nav-link>
         </div>
 

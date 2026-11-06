@@ -186,6 +186,8 @@ return [
     'attributes' => [
         'name' => 'nombre',
         'email' => 'correo electrónico',
+        'email_usuario' => 'correo electrónico',
+        'semestre' => 'semestre',
         'password' => 'contraseña',
         'password_confirmation' => 'confirmación de contraseña',
         'current_password' => 'contraseña actual',

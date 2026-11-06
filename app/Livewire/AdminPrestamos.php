@@ -5,7 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Models\Prestamo;
-use App\Models\User;
+use App\Models\Almacenista;
 use Livewire\WithPagination;
 use App\Models\Herramienta;
 use Illuminate\Support\Facades\DB;
@@ -29,13 +29,6 @@ class AdminPrestamos extends Component
     public $modalDevolucionAbierto = false;
     public $prestamo_id_devolver = null;
     public $almacenista_recibe_id = '';
-    public $usuarios = [];
-
-    public function mount()
-    {
-        // Cargamos a los almacenistas para el select
-        $this->usuarios = User::all();
-    }
 
     public function updatingSearch() { $this->resetPage(); }
     public function updatingFechaInicio() { $this->resetPage(); }
@@ -73,8 +66,19 @@ class AdminPrestamos extends Component
             'almacenista_recibe_id.required' => 'Debes indicar qué almacenista está recibiendo el equipo.'
         ]);
 
+        // Solo puede recibir un almacenista activo con cuenta vinculada
+        $recibe = Almacenista::where('id', $this->almacenista_recibe_id)
+            ->where('estado', 'activo')
+            ->whereNotNull('user_id')
+            ->first();
+
+        if (!$recibe) {
+            $this->addError('almacenista_recibe_id', 'Selecciona un almacenista activo.');
+            return;
+        }
+
         try {
-            DB::transaction(function () {
+            DB::transaction(function () use ($recibe) {
                 $prestamo = Prestamo::with('detalles')->findOrFail($this->prestamo_id_devolver);
 
                 $prestamo->update([
@@ -85,7 +89,7 @@ class AdminPrestamos extends Component
                 foreach ($prestamo->detalles as $detalle) {
                     // Aquí es donde grabamos la firma del que recibe
                     $detalle->update([
-                        'recibido_por_id' => $this->almacenista_recibe_id
+                        'recibido_por_id' => $recibe->user_id
                     ]);
 
                     Herramienta::where('id', $detalle->herramienta_id)
@@ -122,7 +126,14 @@ class AdminPrestamos extends Component
             ->orderBy('fecha_prestamo', 'desc')
             ->paginate(6); 
 
-        return view('livewire.admin-prestamos', compact('prestamos'));
+        // Almacenistas activos para el selector de devoluciones
+        $almacenistas = Almacenista::where('estado', 'activo')
+            ->whereNotNull('user_id')
+            ->orderBy('tipo')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'tipo']);
+
+        return view('livewire.admin-prestamos', compact('prestamos', 'almacenistas'));
     }
 
     public function exportarExcel() {

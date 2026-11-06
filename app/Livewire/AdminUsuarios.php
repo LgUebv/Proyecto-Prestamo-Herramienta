@@ -5,12 +5,15 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Prestatario;
 
 #[Layout('layouts.app')]
 class AdminUsuarios extends Component
 {
     use WithPagination;
+    use WithFileUploads;
 
     public $search = '';
     public $modalAbierto = false;
@@ -19,6 +22,11 @@ class AdminUsuarios extends Component
     public $id_usuario;
     public $numero_control, $nombre_completo, $tipo_usuario, $carrera_departamento;
     public $semestre, $grupo, $telefono, $estado;
+    public $foto;              // Foto nueva tomada con la cámara
+    public $fotoActual = null; // URL de la foto guardada (al editar)
+
+    public $mensajeExito = '';
+    public $mensajeError = '';
 
     public function updatingSearch() { $this->resetPage(); }
 
@@ -44,20 +52,50 @@ class AdminUsuarios extends Component
         $this->grupo = '';
         $this->telefono = '';
         $this->estado = 'activo';
+        $this->foto = null;
+        $this->fotoActual = null;
+        $this->resetValidation();
     }
 
     public function guardar()
     {
-        Prestatario::updateOrCreate(['id' => $this->id_usuario], [
-            'numero_control' => $this->numero_control,
-            'nombre_completo' => $this->nombre_completo,
-            'tipo_usuario' => $this->tipo_usuario,
-            'carrera_departamento' => $this->carrera_departamento,
-            'semestre' => $this->semestre,
-            'grupo' => $this->grupo,
-            'telefono' => $this->telefono,
-            'estado' => $this->estado,
-        ]);
+        // La foto es obligatoria al registrar; al editar solo se cambia si se toma una nueva
+        $this->validate(
+            [
+                'foto' => ($this->id_usuario ? 'nullable' : 'required') . '|image|max:5120',
+                'semestre' => 'nullable|integer|min:1|max:20',
+            ],
+            ['foto.required' => 'Toma la fotografía del usuario antes de guardar.'],
+            ['foto' => 'fotografía'],
+        );
+
+        $anterior = $this->id_usuario ? Prestatario::find($this->id_usuario) : null;
+        $rutaFoto = $this->foto ? $this->foto->store('prestatarios', 'local') : $anterior?->foto;
+
+        try {
+            Prestatario::updateOrCreate(['id' => $this->id_usuario], [
+                'numero_control' => $this->numero_control,
+                'nombre_completo' => $this->nombre_completo,
+                'tipo_usuario' => $this->tipo_usuario,
+                'carrera_departamento' => $this->carrera_departamento ?: null,
+                'semestre' => $this->semestre !== '' ? $this->semestre : null,
+                'grupo' => $this->grupo ?: null,
+                'telefono' => $this->telefono ?: null,
+                'estado' => $this->estado,
+                'foto' => $rutaFoto,
+            ]);
+        } catch (\Exception $e) {
+            // No dejar en disco una foto nueva de un registro que no se guardó
+            if ($this->foto) {
+                Storage::disk('local')->delete($rutaFoto);
+            }
+            throw $e;
+        }
+
+        // Si se reemplazó la foto, borrar la anterior del disco
+        if ($this->foto && $anterior?->foto) {
+            Storage::disk('local')->delete($anterior->foto);
+        }
         
         $this->cerrarModal();
     }
@@ -74,6 +112,9 @@ class AdminUsuarios extends Component
         $this->grupo = $usuario->grupo;
         $this->telefono = $usuario->telefono;
         $this->estado = $usuario->estado;
+        $this->foto = null;
+        $this->fotoActual = $usuario->foto_url;
+        $this->resetValidation();
         
         $this->modalAbierto = true;
     }
@@ -96,6 +137,9 @@ class AdminUsuarios extends Component
                 $this->mensajeExito = 'El usuario tiene préstamos en su historial. Se ha marcado como INACTIVO por seguridad.';
             } else {
                 // Si es un usuario nuevo que nunca pidió nada, sí podemos borrarlo por completo.
+                if ($usuario->foto) {
+                    Storage::disk('local')->delete($usuario->foto);
+                }
                 $usuario->delete();
                 $this->mensajeExito = 'Usuario eliminado de la base de datos correctamente.';
             }

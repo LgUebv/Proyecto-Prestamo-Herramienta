@@ -40,7 +40,7 @@ COPY --from=docker.io/library/composer:2 /usr/bin/composer /usr/bin/composer
 
 # Primero solo los manifiestos para aprovechar la caché de capas
 COPY composer.json composer.lock ./
-RUN --mount=type=cache,target=/root/.composer/cache \
+RUN \
     composer install --no-dev --no-interaction --no-progress --prefer-dist \
         --no-scripts --no-autoloader
 
@@ -56,7 +56,7 @@ FROM docker.io/library/node:22-alpine AS assets
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 COPY vite.config.js tailwind.config.js postcss.config.js ./
 COPY resources ./resources

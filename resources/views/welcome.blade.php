@@ -82,11 +82,6 @@
                             <a href="{{ route('login') }}" class="rounded-md bg-[#3710a0] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2a0c7c] focus:outline-none focus:ring-2 focus:ring-[#3710a0] focus:ring-offset-2">
                                 Iniciar sesión
                             </a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="text-sm font-semibold text-[#3710a0] hover:underline">
-                                    Crear cuenta de almacenista
-                                </a>
-                            @endif
                         @endauth
                     </div>
 

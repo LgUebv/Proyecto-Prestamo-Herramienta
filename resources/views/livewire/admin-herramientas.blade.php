@@ -4,6 +4,12 @@
     </x-slot>
 
     <div class="bg-white shadow-xl sm:rounded-lg p-6">
+        @if ($mensajeExito)
+            <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">{{ $mensajeExito }}</div>
+        @endif
+        @if ($mensajeError)
+            <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">{{ $mensajeError }}</div>
+        @endif
         <div class="flex justify-between mb-4">
             <input type="text" wire:model.live="search" placeholder="Buscar herramienta o código..."
                 class="border-gray-300 rounded-md w-1/3 shadow-sm">
@@ -17,7 +23,7 @@
             <table class="min-w-full divide-y divide-gray-200 border">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs text-gray-500 uppercase font-bold">QR / Código</th>
+                        <th class="px-6 py-3 text-left text-xs text-gray-500 uppercase font-bold">Código de barras</th>
                         <th class="px-6 py-3 text-left text-xs text-gray-500 uppercase font-bold">Nombre</th>
                         <th class="px-6 py-3 text-left text-xs text-gray-500 uppercase font-bold">Marca</th>
                         <th class="px-6 py-3 text-left text-xs text-gray-500 uppercase font-bold">Estado</th>
@@ -39,7 +45,7 @@
                             </td>
                             <td class="px-6 py-4 text-center text-sm font-medium space-x-3">
                                 <button wire:click="mostrarQr({{ $h->id }})"
-                                    class="text-gray-600 hover:text-gray-900 font-bold">Ver QR</button>
+                                    class="text-gray-600 hover:text-gray-900 font-bold">Ver etiqueta</button>
                                 <button wire:click="editar({{ $h->id }})"
                                     class="text-indigo-600 hover:text-indigo-900 font-bold">Editar</button>
                                 <button wire:click="borrar({{ $h->id }})"
@@ -166,7 +172,7 @@
             // Abrimos una ventana pequeña y limpia
             let ventana = window.open('', '_blank', 'width=350,height=400');
 
-            ventana.document.write('<!DOCTYPE html><html><head><title>Impresion de Etiqueta</title>');
+            ventana.document.write('<!DOCTYPE html><html><head><title>Impresión de Etiqueta</title>');
             ventana.document.write('<style>');
 
             ventana.document.write('@page { margin: 0; }');

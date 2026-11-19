@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Prestatario;
 use App\Http\Controllers\DashboardController;
-use App\Livewire\MisPrestamos;
 use App\Livewire\AdminPrestamos;
 use App\Livewire\AdminHerramientas;
 use App\Livewire\AdminUsuarios;
@@ -32,8 +31,6 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-// Ruta para usuarios normales
-Route::get('/mis-prestamos', MisPrestamos::class)->name('mis.prestamos');
 
 // Rutas para administradores
 Route::get('/admin/prestamos', AdminPrestamos::class)->name('admin.prestamos');

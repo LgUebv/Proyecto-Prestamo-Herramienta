@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use App\Models\Prestatario;
 
 #[Layout('layouts.app')]
@@ -59,14 +60,27 @@ class AdminUsuarios extends Component
 
     public function guardar()
     {
+        $this->numero_control = trim((string) $this->numero_control);
+
+        // "NO HAY" (trabajadores sin número de control): se genera uno automático EXT-…
+        // Al editar, si ya tenía uno automático se conserva.
+        if (preg_match('/^no\s*hay$/i', $this->numero_control)) {
+            $actual = $this->id_usuario ? Prestatario::find($this->id_usuario)?->numero_control : null;
+            $this->numero_control = $actual && str_starts_with($actual, 'EXT-')
+                ? $actual
+                : Prestatario::generarNumeroExterno();
+        }
+
         // La foto es obligatoria al registrar; al editar solo se cambia si se toma una nueva
         $this->validate(
             [
+                'numero_control' => ['required', 'string', 'max:20', Rule::unique('prestatarios', 'numero_control')->ignore($this->id_usuario)],
+                'nombre_completo' => 'required|string|max:150',
                 'foto' => ($this->id_usuario ? 'nullable' : 'required') . '|image|max:5120',
                 'semestre' => 'nullable|integer|min:1|max:20',
             ],
             ['foto.required' => 'Toma la fotografía del usuario antes de guardar.'],
-            ['foto' => 'fotografía'],
+            ['foto' => 'fotografía', 'numero_control' => 'número de control', 'nombre_completo' => 'nombre completo'],
         );
 
         $anterior = $this->id_usuario ? Prestatario::find($this->id_usuario) : null;

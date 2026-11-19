@@ -31,10 +31,6 @@
                     <x-nav-link href="{{ route('admin.herramientas') }}" :active="request()->routeIs('admin.herramientas')">
                         {{ __('Herramientas') }}
                     </x-nav-link>
-                    {{-- @else --}}
-                    {{-- <x-nav-link href="{{ route('mis.prestamos') }}" :active="request()->routeIs('mis.prestamos')">
-                        {{ __('Mis Préstamos') }}
-                    </x-nav-link> --}}
                     {{-- @endif --}}
                 </div>
             </div>

@@ -63,7 +63,7 @@ class NuevoPrestamo extends Component
         $this->mensajeError = ''; $this->mensajeExito = '';
         $this->numeroControl = trim($this->numeroControl); 
 
-        if (strlen($this->numeroControl) !== 9 && !str_starts_with($this->numeroControl, 'T-')) {
+        if (!preg_match('/^\d{9}$/', $this->numeroControl) && !str_starts_with($this->numeroControl, 'T-')) {
             $this->mensajeError = 'El número de control debe tener exactamente 9 dígitos (o empezar con T- para trabajadores).';
             $this->esNuevoRegistro = false;
             $this->prestatario = null;
@@ -192,12 +192,28 @@ class NuevoPrestamo extends Component
 
         try {
             DB::transaction(function () use ($autoriza, &$rutaFoto) {
+                // 3a. Volver a revisar con bloqueo que las herramientas sigan disponibles:
+                // otro almacenista pudo prestarlas después de que se escanearan aquí.
+                $disponibles = Herramienta::whereIn('id', collect($this->carrito)->pluck('id'))
+                    ->lockForUpdate()
+                    ->get()
+                    ->where('disponibilidad', 'disponible')
+                    ->pluck('id');
+
+                $noDisponibles = collect($this->carrito)
+                    ->reject(fn ($item) => $disponibles->contains($item['id']))
+                    ->pluck('codigo_barras');
+
+                if ($noDisponibles->isNotEmpty()) {
+                    throw new \DomainException('Estas herramientas ya no están disponibles: ' . $noDisponibles->implode(', ') . '. Quítalas de la lista para continuar.');
+                }
+
                 // 3. Crear el Prestatario si es necesario
                 if ($this->es_trabajador) {
                     $this->prestatario = Prestatario::firstOrCreate(
                         ['nombre_completo' => $this->nombre_trabajador],
                         [
-                            'numero_control' => 'EXT-' . time(), 
+                            'numero_control' => Prestatario::generarNumeroExterno(),
                             'tipo_usuario' => 'Trabajador Externo',
                             'estado' => 'activo' 
                         ]
@@ -254,7 +270,9 @@ class NuevoPrestamo extends Component
             if ($rutaFoto) {
                 Storage::disk('local')->delete($rutaFoto);
             }
-            $this->mensajeError = 'Error al guardar en base de datos: ' . $e->getMessage();
+            $this->mensajeError = $e instanceof \DomainException
+                ? $e->getMessage()
+                : 'Error al guardar en base de datos: ' . $e->getMessage();
         }
     }
 

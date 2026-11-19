@@ -79,7 +79,12 @@ class AdminPrestamos extends Component
 
         try {
             DB::transaction(function () use ($recibe) {
-                $prestamo = Prestamo::with('detalles')->findOrFail($this->prestamo_id_devolver);
+                $prestamo = Prestamo::with('detalles')->lockForUpdate()->findOrFail($this->prestamo_id_devolver);
+
+                // Un préstamo ya devuelto no se vuelve a procesar (liberaría herramientas prestadas a otra persona)
+                if ($prestamo->estado_prestamo === 'devuelto') {
+                    throw new \DomainException('Este préstamo ya fue devuelto.');
+                }
 
                 $prestamo->update([
                     'fecha_devolucion_real' => now(),
@@ -100,6 +105,9 @@ class AdminPrestamos extends Component
             $this->mensajeExito = '¡Herramientas devueltas y firmadas exitosamente!';
             $this->cerrarModalDevolucion();
 
+        } catch (\DomainException $e) {
+            $this->mensajeError = $e->getMessage();
+            $this->cerrarModalDevolucion();
         } catch (\Exception $e) {
             $this->mensajeError = 'Ocurrió un error al registrar la devolución: ' . $e->getMessage();
         }

@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
 use App\Models\Herramienta;
+use App\Models\PrestamoDetalles;
 use Illuminate\Support\Str;
 
 #[Layout('layouts.app')]
@@ -22,6 +23,9 @@ class AdminHerramientas extends Component
     // Variables exclusivas para el QR
     public $modalQrAbierto = false;
     public $herramientaSeleccionada = null;
+
+    public $mensajeExito = '';
+    public $mensajeError = '';
 
     public function updatingSearch() { $this->resetPage(); }
 
@@ -116,7 +120,22 @@ class AdminHerramientas extends Component
         $this->modalAbierto = true;
     }
 
-    public function borrar($id) { Herramienta::find($id)->delete(); }
+    public function borrar($id)
+    {
+        $this->mensajeExito = '';
+        $this->mensajeError = '';
+
+        $herramienta = Herramienta::findOrFail($id);
+
+        // Con historial de préstamos no se borra: se perdería el registro de quién la usó
+        if (PrestamoDetalles::where('herramienta_id', $id)->exists()) {
+            $this->mensajeError = "La herramienta {$herramienta->codigo_barras} tiene préstamos en su historial y no se puede eliminar. Si ya no se usa, márcala en Mantenimiento.";
+            return;
+        }
+
+        $herramienta->delete();
+        $this->mensajeExito = "Herramienta {$herramienta->codigo_barras} eliminada correctamente.";
+    }
 
     // --- FUNCIONES DEL CÓDIGO QR ---
     public function mostrarQr($id)

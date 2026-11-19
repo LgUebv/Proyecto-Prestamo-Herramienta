@@ -114,7 +114,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">3. Escanear Herramienta</label>
                     <input type="text" wire:model="codigoBarras" wire:keydown.enter="agregarAlCarrito"
                         class="w-full border-gray-300 rounded-md shadow-sm disabled:bg-gray-200" 
-                        placeholder="Código QR y Enter" {{ (!$es_trabajador && !$prestatario && !$esNuevoRegistro) ? 'disabled' : '' }}>
+                        placeholder="Código de barras y Enter" {{ (!$es_trabajador && !$prestatario && !$esNuevoRegistro) ? 'disabled' : '' }}>
                 </div>
 
             </div>

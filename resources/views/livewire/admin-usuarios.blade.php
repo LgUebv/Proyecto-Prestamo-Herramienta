@@ -85,10 +85,13 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Número de Control</label>
-                    <input type="text" wire:model="numero_control" placeholder="Escribe 'NO HAY' si es trabajador" class="w-full mb-3 border-gray-300 rounded-md shadow-sm">
+                    <input type="text" wire:model="numero_control" placeholder="Escribe 'NO HAY' si es trabajador" class="w-full mb-1 border-gray-300 rounded-md shadow-sm">
+                    <p class="mb-3 text-xs text-gray-500">Con "NO HAY" se asigna un número automático (EXT-…).</p>
+                    @error('numero_control') <span class="block -mt-2 mb-3 text-sm text-red-600">{{ $message }}</span> @enderror
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
                     <input type="text" wire:model="nombre_completo" placeholder="Ej. Juan Pérez" class="w-full mb-3 border-gray-300 rounded-md shadow-sm">
+                    @error('nombre_completo') <span class="block -mt-2 mb-3 text-sm text-red-600">{{ $message }}</span> @enderror
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Usuario</label>
                     <select wire:model="tipo_usuario" class="w-full mb-3 border-gray-300 rounded-md shadow-sm">

@@ -26,6 +26,9 @@ if [ "$1" = "apache2-foreground" ]; then
                  storage/framework/cache/data storage/framework/sessions \
                  storage/framework/views storage/logs
         chown -R www-data:www-data storage bootstrap/cache
+
+        # Asegurar que Apache cargue un solo MPM (prefork, el que usa mod_php)
+        rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
     fi
 
     if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then

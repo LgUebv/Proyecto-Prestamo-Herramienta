@@ -25,7 +25,9 @@ COPY docker/php/app.ini "$PHP_INI_DIR/conf.d/zz-app.ini"
 COPY docker/apache/000-default.conf /etc/apache2/sites-available/000-default.conf
 
 # Apache escucha en 8080 para poder ejecutarse como usuario sin privilegios
-RUN a2enmod rewrite headers \
+# Solo un MPM: mod_php requiere prefork (evita "More than one MPM loaded")
+RUN a2dismod -f mpm_event mpm_worker || true \
+    && a2enmod mpm_prefork rewrite headers \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && chown -R www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apache2
 

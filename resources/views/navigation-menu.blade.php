@@ -31,6 +31,9 @@
                     <x-nav-link href="{{ route('admin.herramientas') }}" :active="request()->routeIs('admin.herramientas')">
                         {{ __('Herramientas') }}
                     </x-nav-link>
+                    <x-nav-link href="{{ route('admin.categorias') }}" :active="request()->routeIs('admin.categorias')">
+                        {{ __('Categorías') }}
+                    </x-nav-link>
                     {{-- @endif --}}
                 </div>
             </div>
@@ -184,6 +187,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link href="{{ route('admin.herramientas') }}" :active="request()->routeIs('admin.herramientas')">
                 {{ __('Herramientas') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('admin.categorias') }}" :active="request()->routeIs('admin.categorias')">
+                {{ __('Categorías') }}
             </x-responsive-nav-link>
         </div>
 

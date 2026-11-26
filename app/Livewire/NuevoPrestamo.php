@@ -61,16 +61,30 @@ class NuevoPrestamo extends Component
     public function buscarPrestatario()
     {
         $this->mensajeError = ''; $this->mensajeExito = '';
-        $this->numeroControl = trim($this->numeroControl); 
+        $this->numeroControl = strtoupper(trim($this->numeroControl));
 
-        if (!preg_match('/^\d{9}$/', $this->numeroControl) && !str_starts_with($this->numeroControl, 'T-')) {
-            $this->mensajeError = 'El número de control debe tener exactamente 9 dígitos (o empezar con T- para trabajadores).';
+        // Se aceptan dos formatos:
+        // - Número de control: exactamente 9 dígitos.
+        // - Trabajador externo ya registrado: EXT- seguido solo de números (EXT-1777143320).
+        //   Los trabajadores nuevos se registran con la casilla "Es trabajador externo".
+        $esExterno = (bool) preg_match('/^EXT-\d+$/', $this->numeroControl);
+
+        if (!$esExterno && !preg_match('/^\d{9}$/', $this->numeroControl)) {
+            $this->mensajeError = 'Formato no válido. Ingresa el número de control (9 dígitos) o, si es trabajador externo ya registrado, su número EXT- seguido de números (ej. EXT-1777143320).';
             $this->esNuevoRegistro = false;
             $this->prestatario = null;
             return;
         }
 
         $usuario = Prestatario::where('numero_control', $this->numeroControl)->first();
+
+        // Un número EXT- solo sirve para buscar: los trabajadores nuevos reciben su número automáticamente
+        if ($esExterno && !$usuario) {
+            $this->mensajeError = "No hay ningún trabajador externo con el número {$this->numeroControl}. Para registrar uno nuevo, marca \"Es trabajador externo\".";
+            $this->esNuevoRegistro = false;
+            $this->prestatario = null;
+            return;
+        }
 
         if ($usuario) {
             if ($usuario->estado !== 'activo') {
@@ -224,7 +238,7 @@ class NuevoPrestamo extends Component
                     $this->prestatario = Prestatario::create([
                         'numero_control' => $this->numeroControl,
                         'nombre_completo' => $this->nombreCompleto,
-                        'tipo_usuario' => str_starts_with($this->numeroControl, 'T-') ? 'Trabajador' : 'Alumno',
+                        'tipo_usuario' => 'Alumno',
                         'estado' => 'activo',
                         'foto' => $rutaFoto,
                     ]);

@@ -18,6 +18,17 @@ class PrestamoDetalles extends Model
         'recibido_por_id'
     ];
 
+    // La herramienta regresó dañada (se guarda como "Dañada: <descripción>" al recibirla o al corregir)
+    public function estaDanada(): bool
+    {
+        return str_starts_with((string) $this->condicion_devolucion, 'Dañada: ');
+    }
+
+    public function notaDano(): ?string
+    {
+        return $this->estaDanada() ? substr($this->condicion_devolucion, strlen('Dañada: ')) : null;
+    }
+
 // Este detalle pertenece a una herramienta específica
     public function herramienta()
     {

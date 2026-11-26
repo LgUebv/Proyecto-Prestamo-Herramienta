@@ -31,14 +31,16 @@
                             <input type="text" wire:model="nombre_trabajador" 
                                 class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-yellow-500 focus:border-yellow-500" 
                                 placeholder="Ej. Juan Pérez" autofocus>
+                            <p class="mt-1 text-xs text-yellow-800">Si es su primer préstamo, se le asignará un número automático EXT-… al guardar.</p>
                         </div>
                     @else
-                        <label class="block text-xs font-semibold text-gray-500 mb-2">Escanea credencial o ingresa número</label>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Escanea credencial o ingresa número</label>
+                        <p class="text-xs text-gray-500 mb-2">Número de control: 9 dígitos. Trabajador externo ya registrado: <span class="font-mono font-semibold">EXT-</span> seguido de su número (ej. EXT-1777143320).</p>
                         
                         @if(!$prestatario && !$esNuevoRegistro)
                             <input type="text" wire:model="numeroControl" wire:keydown.enter="buscarPrestatario"
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                                placeholder="Ingresa el no. de control y presiona Enter" autofocus>
+                                placeholder="9 dígitos o EXT-… y presiona Enter" autofocus>
                         @else
                             <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-md">
                                 <div class="flex justify-between items-center mb-2">

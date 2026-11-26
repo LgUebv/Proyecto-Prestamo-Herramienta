@@ -25,7 +25,9 @@ COPY docker/php/app.ini "$PHP_INI_DIR/conf.d/zz-app.ini"
 COPY docker/apache/000-default.conf /etc/apache2/sites-available/000-default.conf
 
 # Apache escucha en 8080 para poder ejecutarse como usuario sin privilegios
-RUN a2enmod rewrite headers \
+# Solo un MPM: mod_php requiere prefork (evita "More than one MPM loaded")
+RUN a2dismod -f mpm_event mpm_worker || true \
+    && a2enmod mpm_prefork rewrite headers \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && chown -R www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apache2
 
@@ -40,7 +42,7 @@ COPY --from=docker.io/library/composer:2 /usr/bin/composer /usr/bin/composer
 
 # Primero solo los manifiestos para aprovechar la caché de capas
 COPY composer.json composer.lock ./
-RUN --mount=type=cache,target=/root/.composer/cache \
+RUN \
     composer install --no-dev --no-interaction --no-progress --prefer-dist \
         --no-scripts --no-autoloader
 
@@ -56,7 +58,7 @@ FROM docker.io/library/node:22-alpine AS assets
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 COPY vite.config.js tailwind.config.js postcss.config.js ./
 COPY resources ./resources

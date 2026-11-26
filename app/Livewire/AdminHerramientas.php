@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
 use App\Models\Herramienta;
+use App\Models\Categoria;
 use App\Models\PrestamoDetalles;
 use Illuminate\Support\Str;
 
@@ -45,16 +46,11 @@ class AdminHerramientas extends Component
         $this->validate([
             'nombre' => 'required',
             'cantidad' => 'required|integer|min:1',
-            'categoria_id' => 'required'
+            'categoria_id' => 'required|exists:categorias,id'
         ]);
 
-        // 2. LÓGICA DE PREFIJO: Basado estrictamente en la categoría
-        $prefijo = match ((int) $this->categoria_id) {
-            1 => 'MAN', // 1 = Herramienta Manual
-            2 => 'POD', // 2 = Herramienta de Poder
-            3 => 'MED', // 3 = Medición
-            default => 'HER', // HER = Genérico por si agregan nuevas categorías después
-        };
+        // 2. PREFIJO: lo define cada categoría (apartado Categorías); HER si no tiene
+        $prefijo = Categoria::find($this->categoria_id)?->prefijo ?: 'HER';
 
         // 3. Si estamos EDITANDO
         if ($this->id_herramienta) {
@@ -180,6 +176,8 @@ class AdminHerramientas extends Component
                         ->orderBy('id')
                         ->paginate(10);
                         
-        return view('livewire.admin-herramientas', compact('herramientas'));
+        $categorias = Categoria::orderBy('nombre')->get(['id', 'nombre']);
+
+        return view('livewire.admin-herramientas', compact('herramientas', 'categorias'));
     }
 }

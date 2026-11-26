@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Detrás del proxy de Railway (o cualquier otro) el HTTPS termina antes de
+        // llegar a Apache: confiar en X-Forwarded-* para generar URLs https.
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \App\Http\Middleware\BloquearAlmacenistaInactivo::class,
         ]);

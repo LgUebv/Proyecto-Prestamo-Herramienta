@@ -38,6 +38,7 @@ class PrestamosExport implements FromQuery, WithHeadings, WithMapping
             'Fecha Devolución',
             'Almacenista que Entregó',
             'Almacenista que Recibió',
+            'Herramientas Dañadas',
             'Estado'
         ];
     }
@@ -50,6 +51,13 @@ class PrestamosExport implements FromQuery, WithHeadings, WithMapping
             $marca = !empty($detalle->herramienta->marca) ? ' (' . $detalle->herramienta->marca . ')' : '';
             return $detalle->cantidad . 'x ' . $nombre . $marca;
         })->implode(', ');
+
+        // Herramientas que regresaron dañadas, con la descripción del daño
+        $danadas = $prestamo->detalles->filter->estaDanada()->map(function ($detalle) {
+            $nombre = $detalle->herramienta->nombre ?? 'Desconocida';
+            $codigo = $detalle->herramienta->codigo_barras ?? 'N/A';
+            return "{$nombre} ({$codigo}): " . $detalle->notaDano();
+        })->implode('; ');
 
         // 2. Obtenemos las firmas
         $primerDetalle = $prestamo->detalles->first();
@@ -66,6 +74,7 @@ class PrestamosExport implements FromQuery, WithHeadings, WithMapping
             $prestamo->fecha_devolucion_real ? \Carbon\Carbon::parse($prestamo->fecha_devolucion_real)->format('d/m/Y H:i') : 'Pendiente',
             $firmaSalida,
             $firmaDevolucion,
+            $danadas ?: 'Ninguna',
             ucfirst($prestamo->estado_prestamo)
         ];
     }

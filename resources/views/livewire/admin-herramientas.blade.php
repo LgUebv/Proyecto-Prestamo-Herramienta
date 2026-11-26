@@ -98,10 +98,11 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
                     <select wire:model="categoria_id" class="w-full mb-3 border-gray-300 rounded shadow-sm">
                         <option value="">Selecciona una categoría...</option>
-                        <option value="1">Herramienta Manual</option>
-                        <option value="2">Herramienta de Poder</option>
-                        <option value="3">Medición</option>
+                        @foreach ($categorias as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
+                        @endforeach
                     </select>
+                    @error('categoria_id') <span class="block -mt-2 mb-3 text-red-500 text-sm">{{ $message }}</span> @enderror
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
                     <input type="text" wire:model="marca" placeholder="Marca"

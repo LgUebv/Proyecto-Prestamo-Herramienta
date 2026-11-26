@@ -14,6 +14,8 @@
         .status-activo { color: #dc2626; font-weight: bold; } /* Rojo */
         .status-devuelto { color: #16a34a; font-weight: bold; } /* Verde */
         ul { margin: 0; padding-left: 15px; }
+        .danada { color: #c2410c; font-weight: bold; }
+        .nota-dano { display: block; color: #c2410c; font-size: 9px; }
     </style>
 </head>
 <body>
@@ -53,6 +55,10 @@
                                 <strong>{{ $detalle->cantidad }}x {{ $detalle->herramienta->nombre ?? 'Sin nombre' }}</strong> 
                                 @if(!empty($detalle->herramienta->marca))
                                     <span style="color: #666;">({{ $detalle->herramienta->marca }})</span>
+                                @endif
+                                @if($detalle->estaDanada())
+                                    <span class="danada">[DAÑADA]</span>
+                                    <span class="nota-dano">{{ $detalle->notaDano() }}</span>
                                 @endif
                             </li>
                         @endforeach

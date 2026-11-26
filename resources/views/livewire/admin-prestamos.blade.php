@@ -83,7 +83,12 @@
                         <td class="px-4 py-4 text-sm text-gray-700">
                             <ul class="list-disc list-inside">
                                 @foreach($prestamo->detalles as $detalle)
-                                    <li>{{ $detalle->cantidad }}x {{ $detalle->herramienta->nombre ?? 'Eliminada' }} <span class="text-xs text-gray-400">({{ $detalle->herramienta->codigo_barras ?? 'N/A' }})</span></li>
+                                    <li>{{ $detalle->cantidad }}x {{ $detalle->herramienta->nombre ?? 'Eliminada' }} <span class="text-xs text-gray-400">({{ $detalle->herramienta->codigo_barras ?? 'N/A' }})</span>
+                                        @if ($detalle->estaDanada())
+                                            <span class="ml-1 px-1.5 py-0.5 text-xs font-bold rounded bg-orange-100 text-orange-800">Dañada</span>
+                                            <span class="block ml-4 text-xs text-orange-700">{{ $detalle->notaDano() }}</span>
+                                        @endif
+                                    </li>
                                 @endforeach
                             </ul>
                         </td>
@@ -122,6 +127,10 @@
                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-gray-200 text-gray-800">
                                     Finalizado: {{ \Carbon\Carbon::parse($prestamo->fecha_devolucion_real)->format('d/m/Y H:i') }}
                                 </span>
+                                <button wire:click="abrirModalCorreccion({{ $prestamo->id }})"
+                                        class="block mx-auto mt-2 text-xs font-bold text-orange-600 hover:text-orange-800 hover:underline">
+                                    Corregir devolución
+                                </button>
                             @endif
                         </td>
                     </tr>
@@ -143,16 +152,20 @@
 
     @if($modalDevolucionAbierto)
         <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-xl overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold text-gray-800">Confirmar Devolución</h3>
                     <button wire:click="cerrarModalDevolucion" class="text-gray-400 hover:text-gray-600 font-bold">&times;</button>
                 </div>
 
-                <div class="p-6">
-                    <p class="text-sm text-gray-600 mb-4">
-                        Por favor, confirma que estás recibiendo las herramientas en buen estado. Esta acción las regresará al inventario disponible.
+                <div class="p-6 max-h-[70vh] overflow-y-auto">
+                    <p class="text-sm text-gray-600 mb-3">
+                        Revisa cada herramienta antes de recibirla. Las que estén en buen estado regresan al inventario disponible; las dañadas se envían a Mantenimiento.
                     </p>
+                    <div class="mb-5">
+                        @include('livewire.partials.estado-herramientas')
+                    </div>
+
                 <label class="block text-sm font-bold text-indigo-800 mb-2">¿Qué almacenista recibe el equipo?</label>
 
 <select wire:model.live="almacenista_recibe_id" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
@@ -178,6 +191,40 @@
                             class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium disabled:opacity-50"
                             {{ empty($almacenista_recibe_id) ? 'disabled' : '' }}>
                         Confirmar y Devolver
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($modalCorreccionAbierto)
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-xl overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-gray-800">Corregir Devolución</h3>
+                    <button wire:click="cerrarModalCorreccion" class="text-gray-400 hover:text-gray-600 font-bold">&times;</button>
+                </div>
+
+                <div class="p-6 max-h-[70vh] overflow-y-auto">
+                    <p class="text-sm text-gray-600 mb-3">
+                        Marca las herramientas que llegaron dañadas para enviarlas a Mantenimiento. Las que marques en buen estado quedan disponibles.
+                    </p>
+
+                    @include('livewire.partials.estado-herramientas')
+
+                    <label class="mt-5 flex items-start gap-2 p-3 border rounded-md cursor-pointer {{ $reabrirPrestamo ? 'border-red-300 bg-red-50' : 'border-gray-200' }}">
+                        <input type="checkbox" wire:model.live="reabrirPrestamo" class="mt-0.5 rounded border-gray-300 text-red-600">
+                        <span class="text-sm">
+                            <span class="font-semibold text-gray-800">Reabrir el préstamo</span>
+                            <span class="block text-gray-600">El préstamo vuelve a estar activo y el prestatario sigue siendo responsable (por ejemplo, si debe reparar o reponer la herramienta).</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="px-6 py-4 bg-gray-50 border-t flex justify-end space-x-3">
+                    <button wire:click="cerrarModalCorreccion" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 font-medium">Cancelar</button>
+                    <button wire:click="guardarCorreccion" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 font-medium">
+                        Guardar corrección
                     </button>
                 </div>
             </div>

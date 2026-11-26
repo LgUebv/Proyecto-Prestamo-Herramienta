@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\AdminAlmacenistas;
+use App\Livewire\AdminCategorias;
 use App\Livewire\AdminHerramientas;
 use App\Livewire\AdminInventario;
 use App\Livewire\AdminPrestamos;
@@ -41,7 +42,8 @@ class SistemaTest extends TestCase
         $this->almacenista = Almacenista::create([
             'nombre' => 'Angel', 'tipo' => 'fijo', 'user_id' => $this->user->id, 'estado' => 'activo',
         ]);
-        $this->categoria = Categoria::create(['nombre' => 'Herramienta Manual']);
+        // La migración crea las categorías base (Herramienta Manual = MAN)
+        $this->categoria = Categoria::where('prefijo', 'MAN')->firstOrFail();
         $this->actingAs($this->user);
     }
 
@@ -82,7 +84,7 @@ class SistemaTest extends TestCase
         $this->prestar($this->prestatario(), Herramienta::first());
 
         foreach (['/', '/dashboard', '/admin/prestamos', '/admin/prestamos/nuevo',
-                  '/admin/herramientas', '/admin/usuarios', '/admin/almacenistas', '/admin/inventario'] as $url) {
+                  '/admin/herramientas', '/admin/usuarios', '/admin/almacenistas', '/admin/inventario', '/admin/categorias'] as $url) {
             $this->get($url)->assertOk();
         }
     }
@@ -138,6 +140,54 @@ class SistemaTest extends TestCase
     {
         Livewire::test(NuevoPrestamo::class)
             ->set('numeroControl', 'abcdefghi')->call('buscarPrestatario')
+            ->assertSet('esNuevoRegistro', false);
+    }
+
+    public function test_numero_de_control_no_acepta_prefijo_t(): void
+    {
+        foreach (['T-abcdefg', 't-abcdefg', 'T-12345'] as $numero) {
+            Livewire::test(NuevoPrestamo::class)
+                ->set('numeroControl', $numero)->call('buscarPrestatario')
+                ->assertSet('esNuevoRegistro', false)
+                ->assertSet('prestatario', null);
+        }
+    }
+
+    public function test_trabajador_externo_recibe_numero_ext_solo_con_digitos(): void
+    {
+        $this->herramienta('MAN-1');
+        Livewire::test(NuevoPrestamo::class)
+            ->set('es_trabajador', true)->set('nombre_trabajador', 'Juan Pérez')
+            ->set('codigoBarras', 'MAN-1')->call('agregarAlCarrito')
+            ->set('materia', 'Mantenimiento')->set('aceptoTerminos', true)
+            ->set('almacenistaAutorizaId', $this->almacenista->id)
+            ->call('confirmarPrestamo')
+            ->assertSet('mensajeExito', '¡Préstamo guardado y firmado correctamente!');
+
+        $this->assertMatchesRegularExpression('/^EXT-\d+$/', Prestatario::where('nombre_completo', 'Juan Pérez')->value('numero_control'));
+    }
+
+    public function test_trabajador_externo_registrado_se_busca_con_ext(): void
+    {
+        Prestatario::create([
+            'numero_control' => 'EXT-1777143320', 'nombre_completo' => 'Juan Pérez',
+            'tipo_usuario' => 'Trabajador Externo', 'estado' => 'activo',
+        ]);
+
+        Livewire::test(NuevoPrestamo::class)
+            ->set('numeroControl', 'ext-1777143320')->call('buscarPrestatario')
+            ->assertSet('nombreCompleto', 'Juan Pérez')
+            ->assertSet('esNuevoRegistro', false);
+
+        // Un EXT- que no existe no crea un registro nuevo
+        Livewire::test(NuevoPrestamo::class)
+            ->set('numeroControl', 'EXT-999')->call('buscarPrestatario')
+            ->assertSet('esNuevoRegistro', false)
+            ->assertSet('prestatario', null);
+
+        // EXT con letras no es válido
+        Livewire::test(NuevoPrestamo::class)
+            ->set('numeroControl', 'EXT-abc')->call('buscarPrestatario')
             ->assertSet('esNuevoRegistro', false);
     }
 
@@ -213,6 +263,200 @@ class SistemaTest extends TestCase
 
         $this->assertSame('prestada', $h->fresh()->disponibilidad,
             'Volver a devolver un préstamo ya devuelto liberó una herramienta que sigue prestada.');
+    }
+
+    private function devolver(Prestamo $prestamo, array $danadas = []): void
+    {
+        $c = Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalDevolucion', $prestamo->id)
+            ->set('almacenista_recibe_id', $this->almacenista->id);
+        foreach ($danadas as $detalleId => $nota) {
+            $c->set("estadoHerramientas.$detalleId.danada", '1')->set("estadoHerramientas.$detalleId.nota", $nota);
+        }
+        $c->call('confirmarDevolucion')->assertHasNoErrors();
+    }
+
+    public function test_devolucion_con_herramienta_danada_va_a_mantenimiento(): void
+    {
+        $buena = $this->herramienta('MAN-1');
+        $rota = $this->herramienta('MAN-2');
+        $this->prestar($this->prestatario(), $buena, $rota);
+        $prestamo = Prestamo::with('detalles')->first();
+        $detalleRota = $prestamo->detalles->firstWhere('herramienta_id', $rota->id);
+
+        // Marcada como dañada sin describir el daño: no se acepta
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalDevolucion', $prestamo->id)
+            ->set('almacenista_recibe_id', $this->almacenista->id)
+            ->assertSee('Buen estado')->assertDontSee('Describe el daño')
+            ->set("estadoHerramientas.{$detalleRota->id}.danada", '1')
+            ->assertSee('Describe el daño')
+            ->call('confirmarDevolucion')
+            ->assertHasErrors("estadoHerramientas.{$detalleRota->id}.nota");
+        $this->assertSame('activo', $prestamo->fresh()->estado_prestamo);
+
+        $this->devolver($prestamo, [$detalleRota->id => 'Mango roto']);
+
+        $this->assertSame('disponible', $buena->fresh()->disponibilidad);
+        $this->assertSame('mantenimiento', $rota->fresh()->disponibilidad);
+        $this->assertSame('Dañada: Mango roto', $detalleRota->fresh()->condicion_devolucion);
+        $this->assertSame('Buen estado', $prestamo->detalles->firstWhere('herramienta_id', $buena->id)->fresh()->condicion_devolucion);
+    }
+
+    public function test_reportes_muestran_herramientas_danadas(): void
+    {
+        $buena = $this->herramienta('MAN-1');
+        $rota = $this->herramienta('MAN-2');
+        $this->prestar($this->prestatario(), $buena, $rota);
+        $prestamo = Prestamo::with('detalles')->first();
+        $this->devolver($prestamo, [$prestamo->detalles->firstWhere('herramienta_id', $rota->id)->id => 'Mango roto']);
+
+        // Excel: columna "Herramientas Dañadas"
+        $export = new \App\Exports\PrestamosExport(null, null);
+        $columnas = $export->headings();
+        $fila = $export->map($export->query()->first());
+        $this->assertSame('Martillo (MAN-2): Mango roto', $fila[array_search('Herramientas Dañadas', $columnas)]);
+
+        // PDF: marca y descripción del daño
+        $html = view('reportes.prestamos_pdf', ['data' => Prestamo::with('detalles.herramienta')->get()])->render();
+        $this->assertStringContainsString('[DAÑADA]', $html);
+        $this->assertStringContainsString('Mango roto', $html);
+    }
+
+    public function test_corregir_devolucion_manda_a_mantenimiento_sin_reabrir(): void
+    {
+        $buena = $this->herramienta('MAN-1');
+        $rota = $this->herramienta('MAN-2');
+        $this->prestar($this->prestatario(), $buena, $rota);
+        $prestamo = Prestamo::with('detalles')->first();
+        $this->devolver($prestamo);
+        $detalleRota = $prestamo->detalles->firstWhere('herramienta_id', $rota->id);
+
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalCorreccion', $prestamo->id)
+            ->assertSee('Corregir Devolución')->assertSee('Reabrir el préstamo')
+            ->set("estadoHerramientas.{$detalleRota->id}.danada", '1')
+            ->set("estadoHerramientas.{$detalleRota->id}.nota", 'No enciende')
+            ->call('guardarCorreccion')
+            ->assertSet('mensajeError', '');
+
+        $this->assertSame('devuelto', $prestamo->fresh()->estado_prestamo);
+        $this->assertSame('mantenimiento', $rota->fresh()->disponibilidad);
+        $this->assertSame('disponible', $buena->fresh()->disponibilidad);
+        $this->assertSame('Dañada: No enciende', $detalleRota->fresh()->condicion_devolucion);
+
+        // La tabla de préstamos muestra la marca de dañada con la descripción
+        Livewire::test(AdminPrestamos::class)->assertSee('Corregir devolución')->assertSee('No enciende');
+    }
+
+    public function test_corregir_devolucion_reabriendo_el_prestamo(): void
+    {
+        $buena = $this->herramienta('MAN-1');
+        $rota = $this->herramienta('MAN-2');
+        $this->prestar($this->prestatario(), $buena, $rota);
+        $prestamo = Prestamo::with('detalles')->first();
+        $this->devolver($prestamo);
+        $detalleRota = $prestamo->detalles->firstWhere('herramienta_id', $rota->id);
+
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalCorreccion', $prestamo->id)
+            ->set("estadoHerramientas.{$detalleRota->id}.danada", '1')
+            ->set("estadoHerramientas.{$detalleRota->id}.nota", 'Disco roto')
+            ->set('reabrirPrestamo', true)
+            ->call('guardarCorreccion');
+
+        $prestamo->refresh();
+        $this->assertSame('activo', $prestamo->estado_prestamo);
+        $this->assertNull($prestamo->fecha_devolucion_real);
+        $this->assertSame('prestada', $buena->fresh()->disponibilidad);
+        $this->assertSame('mantenimiento', $rota->fresh()->disponibilidad);
+
+        // Al volver a devolverlo, la dañada sigue marcada y no regresa a disponible
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalDevolucion', $prestamo->id)
+            ->assertSet("estadoHerramientas.{$detalleRota->id}.danada", '1')
+            ->assertSet("estadoHerramientas.{$detalleRota->id}.nota", 'Disco roto')
+            ->set('almacenista_recibe_id', $this->almacenista->id)
+            ->call('confirmarDevolucion');
+
+        $this->assertSame('mantenimiento', $rota->fresh()->disponibilidad);
+        $this->assertSame('disponible', $buena->fresh()->disponibilidad);
+    }
+
+    public function test_no_se_corrige_si_la_herramienta_ya_salio_en_otro_prestamo(): void
+    {
+        $h = $this->herramienta('MAN-1');
+        $this->prestar($this->prestatario('211100001'), $h);
+        $primero = Prestamo::first();
+        $this->devolver($primero);
+        $this->prestar($this->prestatario('211100002'), $h->fresh());
+
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalCorreccion', $primero->id)
+            ->set('reabrirPrestamo', true)
+            ->call('guardarCorreccion');
+
+        $this->assertSame('devuelto', $primero->fresh()->estado_prestamo);
+        $this->assertSame('prestada', $h->fresh()->disponibilidad);
+    }
+
+    public function test_solo_se_corrigen_prestamos_devueltos(): void
+    {
+        $this->prestar($this->prestatario(), $this->herramienta('MAN-1'));
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalCorreccion', Prestamo::first()->id)
+            ->assertSet('modalCorreccionAbierto', false)
+            ->assertSet('mensajeError', 'Este préstamo no está marcado como devuelto.');
+    }
+
+    // ---------- Categorías ----------
+
+    public function test_categorias_base_existen(): void
+    {
+        $this->assertEqualsCanonicalizing(['MAN', 'POD', 'MED'], Categoria::pluck('prefijo')->all());
+    }
+
+    public function test_categoria_nueva_define_prefijo_de_codigos(): void
+    {
+        Livewire::test(AdminCategorias::class)->call('abrirModal')
+            ->set('nombre', 'Herramienta Eléctrica')->set('prefijo', 'ele')
+            ->call('guardar')->assertHasNoErrors();
+
+        $cat = Categoria::where('nombre', 'Herramienta Eléctrica')->first();
+        $this->assertSame('ELE', $cat->prefijo);
+
+        Livewire::test(AdminHerramientas::class)->call('abrirModal')
+            ->set('nombre', 'Multímetro')->set('cantidad', 2)->set('categoria_id', $cat->id)
+            ->call('guardar');
+
+        $this->assertEqualsCanonicalizing(['ELE-1', 'ELE-2'], Herramienta::pluck('codigo_barras')->all());
+    }
+
+    public function test_categoria_valida_nombre_y_prefijo(): void
+    {
+        Livewire::test(AdminCategorias::class)->call('abrirModal')
+            ->set('nombre', 'Medición')->set('prefijo', 'MAN')
+            ->call('guardar')->assertHasErrors(['nombre', 'prefijo']);
+
+        Livewire::test(AdminCategorias::class)->call('abrirModal')
+            ->set('nombre', 'Otra')->set('prefijo', 'A1')
+            ->call('guardar')->assertHasErrors('prefijo');
+
+        // Editar conservando su propio nombre y prefijo sí se permite
+        Livewire::test(AdminCategorias::class)->call('editar', $this->categoria->id)
+            ->set('descripcion', 'Martillos y desarmadores')
+            ->call('guardar')->assertHasNoErrors();
+    }
+
+    public function test_categoria_con_herramientas_no_se_borra(): void
+    {
+        $this->herramienta('MAN-1');
+        Livewire::test(AdminCategorias::class)->call('borrar', $this->categoria->id);
+        $this->assertNotNull($this->categoria->fresh());
+
+        $vacia = Categoria::where('prefijo', 'MED')->first();
+        Livewire::test(AdminCategorias::class)->call('borrar', $vacia->id);
+        $this->assertNull($vacia->fresh());
     }
 
     // ---------- Herramientas ----------

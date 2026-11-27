@@ -579,4 +579,159 @@ class SistemaTest extends TestCase
         Livewire::test(AdminInventario::class)->call('exportarPdf')->assertFileDownloaded();
     }
 
+    public function test_reporte_inventario_incluye_prestadas_y_mantenimiento(): void
+    {
+        $this->herramienta('MAN-1');
+        $this->herramienta('MAN-2', 'prestada');
+        $this->herramienta('MAN-3', 'mantenimiento');
+        $this->herramienta('MAN-4', 'mantenimiento');
+
+        $export = new \App\Exports\InventarioExport;
+        $this->assertSame(
+            ['Herramienta', 'Marca', 'Stock Total', 'Disponibles', 'Prestadas', 'En Mantenimiento'],
+            $export->headings()
+        );
+        $this->assertSame(['Martillo', 'Truper', 4, 1, 1, 2], $export->map($export->collection()->first()));
+
+        $html = view('reportes.inventario_pdf', ['data' => Herramienta::resumenInventario()->get()])->render();
+        $this->assertStringContainsString('En Mantenimiento', $html);
+        $this->assertStringContainsString('Prestadas', $html);
+    }
+
+    // ---------- Regla de morosidad ----------
+
+    private function vencerPrestamos(): void
+    {
+        Prestamo::query()->update(['fecha_limite' => now()->subHour()]);
+    }
+
+    public function test_prestatario_con_prestamo_vencido_queda_bloqueado(): void
+    {
+        $p = $this->prestatario();
+        $this->prestar($p, $this->herramienta('MAN-1'));
+        $this->vencerPrestamos();
+        $this->herramienta('MAN-2');
+
+        Livewire::test(NuevoPrestamo::class)
+            ->set('numeroControl', $p->numero_control)->call('buscarPrestatario')
+            ->assertSet('prestatario', null)
+            ->assertSet('esNuevoRegistro', false)
+            ->assertSee('préstamo vencido');
+
+        $this->prestar($p, Herramienta::where('codigo_barras', 'MAN-2')->first())
+            ->assertSet('mensajeExito', '');
+
+        $this->assertSame(1, Prestamo::count());
+        $this->assertSame('disponible', Herramienta::where('codigo_barras', 'MAN-2')->value('disponibilidad'));
+    }
+
+    public function test_prestamo_activo_sin_vencer_no_bloquea(): void
+    {
+        $p = $this->prestatario();
+        $this->prestar($p, $this->herramienta('MAN-1'));
+
+        $this->prestar($p, $this->herramienta('MAN-2'))
+            ->assertSet('mensajeExito', '¡Préstamo guardado y firmado correctamente!');
+        $this->assertSame(2, Prestamo::count());
+    }
+
+    public function test_prestatario_puede_pedir_de_nuevo_tras_devolver_el_vencido(): void
+    {
+        $p = $this->prestatario();
+        $this->prestar($p, $this->herramienta('MAN-1'));
+        Prestamo::query()->update(['estado_prestamo' => 'devuelto', 'fecha_devolucion_real' => now(), 'fecha_limite' => now()->subHour()]);
+        Herramienta::query()->update(['disponibilidad' => 'disponible']);
+
+        $this->prestar($p, Herramienta::first())
+            ->assertSet('mensajeExito', '¡Préstamo guardado y firmado correctamente!');
+    }
+
+    public function test_trabajador_externo_con_prestamo_vencido_queda_bloqueado(): void
+    {
+        $this->herramienta('MAN-1');
+        $this->herramienta('MAN-2');
+        $pedir = fn (string $codigo) => Livewire::test(NuevoPrestamo::class)
+            ->set('es_trabajador', true)->set('nombre_trabajador', 'Juan Pérez')
+            ->set('codigoBarras', $codigo)->call('agregarAlCarrito')
+            ->set('materia', 'Mantenimiento')->set('aceptoTerminos', true)
+            ->set('almacenistaAutorizaId', $this->almacenista->id)
+            ->call('confirmarPrestamo');
+
+        $pedir('MAN-1')->assertSet('mensajeExito', '¡Préstamo guardado y firmado correctamente!');
+        $this->vencerPrestamos();
+
+        $pedir('MAN-2')->assertSet('mensajeExito', '')->assertSee('préstamo vencido');
+        $this->assertSame(1, Prestamo::count());
+        $this->assertSame('disponible', Herramienta::where('codigo_barras', 'MAN-2')->value('disponibilidad'));
+    }
+
+    public function test_trabajador_externo_con_otro_formato_de_nombre_no_se_duplica(): void
+    {
+        $this->herramienta('MAN-1');
+        $this->herramienta('MAN-2');
+        $pedir = fn (string $nombre, string $codigo) => Livewire::test(NuevoPrestamo::class)
+            ->set('es_trabajador', true)->set('nombre_trabajador', $nombre)
+            ->set('codigoBarras', $codigo)->call('agregarAlCarrito')
+            ->set('materia', 'Mantenimiento')->set('aceptoTerminos', true)
+            ->set('almacenistaAutorizaId', $this->almacenista->id)
+            ->call('confirmarPrestamo');
+
+        $pedir('Juan Pérez', 'MAN-1');
+        $this->vencerPrestamos();
+
+        // Mismo trabajador escrito distinto: debe reconocerse y quedar bloqueado
+        $pedir('  juan   PÉREZ ', 'MAN-2')->assertSee('préstamo vencido');
+        $this->assertSame(1, Prestatario::count());
+    }
+
+    // ---------- Herramientas: "Prestada" solo la asigna un préstamo ----------
+
+    public function test_no_se_puede_dar_de_alta_una_herramienta_como_prestada(): void
+    {
+        Livewire::test(AdminHerramientas::class)
+            ->call('abrirModal')
+            ->set('nombre', 'Martillo')->set('categoria_id', $this->categoria->id)
+            ->set('disponibilidad', 'prestada')
+            ->call('guardar')
+            ->assertHasErrors('disponibilidad');
+
+        $this->assertSame(0, Herramienta::count());
+    }
+
+    public function test_editar_herramienta_prestada_no_la_libera(): void
+    {
+        $h = $this->herramienta('MAN-1');
+        $this->prestar($this->prestatario(), $h);
+
+        Livewire::test(AdminHerramientas::class)
+            ->call('editar', $h->id)
+            ->set('disponibilidad', 'disponible')
+            ->set('marca', 'Pretul')
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        $h->refresh();
+        $this->assertSame('prestada', $h->disponibilidad);
+        $this->assertSame('Pretul', $h->marca);
+    }
+
+    public function test_reporte_de_prestamos_marca_los_vencidos(): void
+    {
+        $this->prestar($this->prestatario(), $this->herramienta('MAN-1'));
+        $export = new \App\Exports\PrestamosExport(null, null);
+        $fila = fn () => $export->map(Prestamo::with('prestatario', 'detalles.herramienta')->first());
+
+        $this->assertSame('Activo', last($fila()));
+        $this->vencerPrestamos();
+        $this->assertSame('Vencido', last($fila()));
+    }
+
+    public function test_devolucion_preselecciona_al_almacenista_de_la_sesion(): void
+    {
+        $this->prestar($this->prestatario(), $this->herramienta('MAN-1'));
+
+        Livewire::test(AdminPrestamos::class)
+            ->call('abrirModalDevolucion', Prestamo::first()->id)
+            ->assertSet('almacenista_recibe_id', (string) $this->almacenista->id);
+    }
 }

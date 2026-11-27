@@ -42,12 +42,18 @@ class AdminHerramientas extends Component
 
     public function guardar()
     {
+        // Una herramienta que hoy está en un préstamo no cambia de estado desde aquí
+        $estaPrestada = $this->id_herramienta
+            && Herramienta::whereKey($this->id_herramienta)->value('disponibilidad') === 'prestada';
+
         // 1. Validamos que siempre elijan una categoría
         $this->validate([
             'nombre' => 'required',
             'cantidad' => 'required|integer|min:1',
-            'categoria_id' => 'required|exists:categorias,id'
-        ]);
+            'categoria_id' => 'required|exists:categorias,id',
+            // "Prestada" solo la asigna el registro de un préstamo
+            'disponibilidad' => $estaPrestada ? 'nullable' : 'required|in:disponible,mantenimiento',
+        ], [], ['disponibilidad' => 'estado']);
 
         // 2. PREFIJO: lo define cada categoría (apartado Categorías); HER si no tiene
         $prefijo = Categoria::find($this->categoria_id)?->prefijo ?: 'HER';
@@ -55,11 +61,12 @@ class AdminHerramientas extends Component
         // 3. Si estamos EDITANDO
         if ($this->id_herramienta) {
             $herramienta = Herramienta::find($this->id_herramienta);
-            
+
             $herramienta->update([
                 'nombre' => $this->nombre,
                 'marca' => $this->marca,
-                'disponibilidad' => $this->disponibilidad,
+                // Si está en un préstamo, sigue prestada hasta que se registre la devolución
+                'disponibilidad' => $herramienta->disponibilidad === 'prestada' ? 'prestada' : $this->disponibilidad,
                 'categoria_id' => $this->categoria_id,
             ]);
         } 

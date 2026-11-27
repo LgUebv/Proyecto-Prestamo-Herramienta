@@ -18,6 +18,8 @@
             <th>Marca</th>
             <th>Stock Total</th>
             <th>Disponibles</th>
+            <th>Prestadas</th>
+            <th>En Mantenimiento</th>
         </tr>
     </thead>
     <tbody>
@@ -27,6 +29,8 @@
             <td>{{ $item->marca }}</td>
             <td>{{ $item->total_piezas }}</td>
             <td>{{ $item->disponibles }}</td>
+            <td>{{ $item->prestadas }}</td>
+            <td>{{ $item->en_mantenimiento }}</td>
         </tr>
         @endforeach
     </tbody>

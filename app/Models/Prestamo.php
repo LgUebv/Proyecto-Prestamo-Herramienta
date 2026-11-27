@@ -19,6 +19,12 @@ class Prestamo extends Model
         'estado_prestamo'
     ];
 
+    // Préstamos sin devolver cuya fecha límite ya pasó
+    public function scopeVencidos($query)
+    {
+        return $query->where('estado_prestamo', 'activo')->where('fecha_limite', '<', now());
+    }
+
     // --- NUEVAS RELACIONES ---
 
     // Un préstamo pertenece a un prestatario (alumno/trabajador)

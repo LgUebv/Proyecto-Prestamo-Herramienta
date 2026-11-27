@@ -114,7 +114,10 @@ class AdminPrestamos extends Component
         $this->resetErrorBag();
 
         $this->prestamo_id_devolver = $id;
-        $this->almacenista_recibe_id = '';
+        // Por defecto recibe el almacenista vinculado a la sesión actual (si está activo)
+        $this->almacenista_recibe_id = (string) (Almacenista::where('user_id', auth()->id())
+            ->where('estado', 'activo')
+            ->value('id') ?? '');
         $this->cargarHerramientas(Prestamo::with('detalles.herramienta')->findOrFail($id));
         $this->modalDevolucionAbierto = true;
     }

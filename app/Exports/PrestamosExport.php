@@ -75,7 +75,9 @@ class PrestamosExport implements FromQuery, WithHeadings, WithMapping
             $firmaSalida,
             $firmaDevolucion,
             $danadas ?: 'Ninguna',
-            ucfirst($prestamo->estado_prestamo)
+            $prestamo->estado_prestamo === 'activo' && \Carbon\Carbon::parse($prestamo->fecha_limite)->isPast()
+                ? 'Vencido'
+                : ucfirst($prestamo->estado_prestamo)
         ];
     }
 }

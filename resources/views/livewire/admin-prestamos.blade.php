@@ -116,11 +116,15 @@
                         </td>
                         <td class="px-4 py-4 text-center">
                             @if($prestamo->estado_prestamo == 'activo' && is_null($prestamo->fecha_devolucion_real))
+                                @php $vencido = \Carbon\Carbon::parse($prestamo->fecha_limite)->isPast(); @endphp
+                                <span class="px-3 py-1 mb-2 inline-flex text-xs leading-5 font-bold rounded-full {{ $vencido ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                    {{ $vencido ? 'Vencido' : 'Activo' }}
+                                </span>
                                 <button wire:click="abrirModalDevolucion({{ $prestamo->id }})" 
                                         class="bg-green-500 text-white px-3 py-1 rounded shadow hover:bg-green-600 text-sm font-bold w-full mb-1">
-                                    Devuelto
+                                    Registrar devolución
                                 </button>
-                                <div class="text-xs text-red-600 font-bold">
+                                <div class="text-xs font-bold {{ $vencido ? 'text-red-600' : 'text-gray-500' }}">
                                     Límite: {{ \Carbon\Carbon::parse($prestamo->fecha_limite)->format('d/m/Y H:i') }}
                                 </div>
                             @else

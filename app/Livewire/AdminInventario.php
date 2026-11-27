@@ -25,10 +25,7 @@ class AdminInventario extends Component
 }
 
 public function exportarPdf() {
-        $data = Herramienta::selectRaw('nombre, marca, COUNT(*) as total_piezas, 
-                SUM(CASE WHEN disponibilidad = "disponible" THEN 1 ELSE 0 END) as disponibles')
-                ->groupBy('nombre', 'marca')
-                ->get();
+        $data = Herramienta::resumenInventario()->get();
                 
         $pdf = Pdf::loadView('reportes.inventario_pdf', compact('data'));
         
@@ -39,21 +36,11 @@ public function exportarPdf() {
     public function render()
     {
         // Consulta agrupada y calculada en tiempo real
-        $inventario = Herramienta::selectRaw('
-                nombre, 
-                marca, 
-                COUNT(*) as total_piezas, 
-                SUM(CASE WHEN disponibilidad = "disponible" THEN 1 ELSE 0 END) as disponibles,
-                SUM(CASE WHEN disponibilidad = "prestada" THEN 1 ELSE 0 END) as prestadas,
-                SUM(CASE WHEN disponibilidad = "mantenimiento" THEN 1 ELSE 0 END) as en_mantenimiento
-            ')
+        $inventario = Herramienta::resumenInventario()
             ->when($this->search, function($query) {
                 $query->where('nombre', 'like', '%'.$this->search.'%')
                       ->orWhere('marca', 'like', '%'.$this->search.'%');
             })
-            ->groupBy('nombre', 'marca')
-            ->orderBy('nombre')
-            ->orderBy('marca')
             ->paginate(10);
 
         return view('livewire.admin-inventario', compact('inventario'));

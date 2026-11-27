@@ -26,9 +26,7 @@ class DashboardController extends Controller
             ->pluck('total', 'disponibilidad');
 
         $prestamosActivos = Prestamo::where('estado_prestamo', 'activo')->count();
-        $prestamosVencidos = Prestamo::where('estado_prestamo', 'activo')
-            ->where('fecha_limite', '<', now())
-            ->count();
+        $prestamosVencidos = Prestamo::vencidos()->count();
 
         // --- Disponibilidad del inventario (parte de un todo) ---
         $disponibilidad = collect(self::DISPONIBILIDAD)->map(fn ($estado, $clave) => [

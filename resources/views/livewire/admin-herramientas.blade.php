@@ -109,11 +109,18 @@
                         class="w-full mb-3 border-gray-300 rounded shadow-sm">
 
                     <label class="block text-sm font-medium text-gray-700 mb-1">Estado / Disponibilidad</label>
-                    <select wire:model="disponibilidad" class="w-full mb-4 border-gray-300 rounded shadow-sm">
-                        <option value="disponible">Disponible</option>
-                        <option value="prestada">Prestada</option>
-                        <option value="mantenimiento">Mantenimiento</option>
-                    </select>
+                    @if($disponibilidad === 'prestada')
+                        <p class="w-full mb-4 px-3 py-2 text-sm bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
+                            Prestada. Volverá a estar disponible cuando se registre su devolución.
+                        </p>
+                    @else
+                        <select wire:model="disponibilidad" class="w-full mb-1 border-gray-300 rounded shadow-sm">
+                            <option value="disponible">Disponible</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                        </select>
+                        @error('disponibilidad') <span class="block mb-3 text-red-500 text-sm">{{ $message }}</span> @enderror
+                        <div class="mb-3"></div>
+                    @endif
                 </div>
 
                 <div class="px-6 py-4 bg-gray-50 border-t flex justify-end space-x-2">

@@ -28,7 +28,7 @@
                     @if($es_trabajador)
                         <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                             <label class="block text-xs text-gray-700 font-bold mb-1 text-yellow-800">Nombre Completo del Trabajador:</label>
-                            <input type="text" wire:model="nombre_trabajador" 
+                            <input type="text" wire:model.live.debounce.300ms="nombre_trabajador" 
                                 class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-yellow-500 focus:border-yellow-500" 
                                 placeholder="Ej. Juan Pérez" autofocus>
                             <p class="mt-1 text-xs text-yellow-800">Si es su primer préstamo, se le asignará un número automático EXT-… al guardar.</p>
@@ -51,7 +51,7 @@
                                 @if($esNuevoRegistro)
                                     <div class="mt-2">
                                         <label class="block text-xs text-gray-700 font-bold text-indigo-800">¡Usuario Nuevo! Ingresa su nombre:</label>
-                                        <input type="text" wire:model="nombreCompleto" 
+                                        <input type="text" wire:model.live.debounce.300ms="nombreCompleto" 
                                             class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm" placeholder="Nombre completo" autofocus>
                                     </div>
 
@@ -78,7 +78,7 @@
                     
                     <div class="mb-3">
                         <label class="block text-sm text-gray-700">Materia / Práctica</label>
-                        <input type="text" wire:model="materia" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                        <input type="text" wire:model.live.debounce.300ms="materia" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
                     </div>
 
                     <div class="mb-3">
@@ -107,7 +107,7 @@
                     </div>
 
                     <div class="mt-4 flex items-start">
-                        <input type="checkbox" wire:model="aceptoTerminos" id="terminos" class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm">
+                        <input type="checkbox" wire:model.live="aceptoTerminos" id="terminos" class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm">
                         <label for="terminos" class="ml-2 text-sm text-gray-600">Acepta términos de uso.</label>
                     </div>
                 </div>

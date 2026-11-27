@@ -90,6 +90,8 @@
                 <td>
                     @if($prestamo->estado_prestamo == 'devuelto')
                         <span class="status-devuelto">DEVUELTO</span>
+                    @elseif(\Carbon\Carbon::parse($prestamo->fecha_limite)->isPast())
+                        <span class="status-activo">VENCIDO</span>
                     @else
                         <span class="status-activo">ACTIVO</span>
                     @endif

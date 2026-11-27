@@ -92,6 +92,15 @@ class NuevoPrestamo extends Component
                 $this->prestatario = null;
                 return;
             }
+
+            // Regla de morosidad: con préstamos vencidos no se abre la sesión de préstamo
+            if ($motivo = $usuario->motivoBloqueoPorMorosidad()) {
+                $this->mensajeError = $motivo;
+                $this->prestatario = null;
+                $this->esNuevoRegistro = false;
+                return;
+            }
+
             $this->prestatario = $usuario;
             $this->nombreCompleto = $usuario->nombre_completo;
             $this->esNuevoRegistro = false;
@@ -100,6 +109,12 @@ class NuevoPrestamo extends Component
             $this->nombreCompleto = '';
             $this->esNuevoRegistro = true;
         }
+    }
+
+    // Quita espacios al inicio/final y deja uno solo entre palabras
+    private function normalizarNombre(?string $nombre): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', (string) $nombre));
     }
 
     public function limpiarPrestatario()
@@ -175,6 +190,9 @@ class NuevoPrestamo extends Component
         }
 
 
+        $this->nombre_trabajador = $this->normalizarNombre($this->nombre_trabajador);
+        $this->nombreCompleto = $this->normalizarNombre($this->nombreCompleto);
+
         // 2. Validación específica según el tipo de persona
         if ($this->es_trabajador) {
             if (empty($this->nombre_trabajador)) {
@@ -224,7 +242,12 @@ class NuevoPrestamo extends Component
 
                 // 3. Crear el Prestatario si es necesario
                 if ($this->es_trabajador) {
-                    $this->prestatario = Prestatario::firstOrCreate(
+                    // Se busca sin distinguir mayúsculas para no duplicar al mismo trabajador
+                    $existente = Prestatario::where('tipo_usuario', 'Trabajador Externo')
+                        ->whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower($this->nombre_trabajador)])
+                        ->first();
+
+                    $this->prestatario = $existente ?? Prestatario::firstOrCreate(
                         ['nombre_completo' => $this->nombre_trabajador],
                         [
                             'numero_control' => Prestatario::generarNumeroExterno(),
@@ -242,6 +265,12 @@ class NuevoPrestamo extends Component
                         'estado' => 'activo',
                         'foto' => $rutaFoto,
                     ]);
+                }
+
+                // Regla de morosidad (se revisa de nuevo aquí: el trabajador externo se identifica
+                // por nombre y pudo generar un vencido después de haberse buscado)
+                if ($motivo = $this->prestatario->motivoBloqueoPorMorosidad()) {
+                    throw new \DomainException($motivo);
                 }
 
                 // 4. Crear el Préstamo principal
